@@ -196,21 +196,10 @@ pytest tests/
 | Phase | Status | Description |
 |---|---|---|
 | Phase 1 | ✅ Done | Docker infra, FastAPI, LangGraph, Triage Agent |
-| Phase 2 | 🔄 In Progress | IOC Enrichment Agent (VirusTotal + AbuseIPDB) |
-| Phase 3 | 📅 Planned | Hunting + Response Agents, Qdrant RAG |
-| Phase 4 | 📅 Planned | RLHF Learning Agent + React Dashboard |
-| Phase 5 | 📅 Planned | Wazuh integration, Kubernetes, load testing |
-
----
-
-## Associated With
-
-SRM Institute of Science and Technology, Tiruchirappalli
-Department of Computer Science and Engineering
-B.Tech CSE — Mini Project (2025)
-
-**Team:** S. Venkat Bharath · V. Bhavani · R. Koushik
-**Guide:** Dr. P. Senthilkumar, Associate Professor
+| Phase 2 | ✅ Done | IOC Enrichment Agent (VirusTotal + AbuseIPDB) |
+| Phase 3 | ✅ Done | Hunting + Response Agents, Qdrant RAG |
+| Phase 4 | ✅ Done | RLHF Learning Agent + React Dashboard |
+| Phase 5 | 🔄 In Progress | Wazuh integration, Kubernetes, load testing |
 
 ---
 
