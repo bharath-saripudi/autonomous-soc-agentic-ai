@@ -1,0 +1,72 @@
+version: "3.9"
+
+services:
+  # ── PostgreSQL: Primary relational store ──
+  postgres:
+    image: postgres:16-alpine
+    container_name: soc-postgres
+    environment:
+      POSTGRES_DB: soc_db
+      POSTGRES_USER: soc_user
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-soc_secret_2024}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U soc_user -d soc_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ── Redis: IOC cache + session store ──
+  redis:
+    image: redis:7-alpine
+    container_name: soc-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # ── Qdrant: Vector DB for incident similarity search ──
+  qdrant:
+    image: qdrant/qdrant:v1.7.4
+    container_name: soc-qdrant
+    ports:
+      - "6333:6333"   # REST API
+      - "6334:6334"   # gRPC
+    volumes:
+      - qdrant_data:/qdrant/storage
+    environment:
+      QDRANT__SERVICE__GRPC_PORT: 6334
+
+  # ── Zookeeper: Required for Kafka ──
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: soc-zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+
+  # ── Kafka: High-volume alert ingestion ──
+  kafka:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: soc-kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+
+volumes:
+  pgdata:
+  qdrant_data:

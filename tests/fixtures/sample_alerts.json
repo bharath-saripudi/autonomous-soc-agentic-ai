@@ -1,0 +1,334 @@
+[
+  {
+    "name": "Ransomware via Email Attachment",
+    "source": "endpoint",
+    "data": {
+      "event_type": "suspicious_file_encryption",
+      "hostname": "WS-FINANCE-04",
+      "username": "j.smith",
+      "process": "svchost_update.exe",
+      "parent_process": "OUTLOOK.EXE",
+      "pid": 4832,
+      "files_affected": 847,
+      "encryption_rate": "120 files/min",
+      "file_extensions_changed": ".locked",
+      "src_ip": "192.168.1.45",
+      "hash_sha256": "a1b2c3d4e5f67890abcdef1234567890abcdef1234567890abcdef1234567890",
+      "severity": "critical",
+      "message": "Mass file encryption detected on WS-FINANCE-04 by process svchost_update.exe spawned from OUTLOOK.EXE"
+    }
+  },
+  {
+    "name": "SSH Brute Force Attack",
+    "source": "firewall",
+    "data": {
+      "event_type": "multiple_failed_auth",
+      "src_ip": "45.33.32.156",
+      "dst_ip": "10.0.1.20",
+      "dst_port": 22,
+      "protocol": "SSH",
+      "failed_attempts": 342,
+      "timeframe": "5 minutes",
+      "username_pattern": "root, admin, ubuntu, test",
+      "severity": "high",
+      "message": "342 failed SSH login attempts from 45.33.32.156 to 10.0.1.20 in 5 minutes"
+    }
+  },
+  {
+    "name": "DNS Exfiltration",
+    "source": "dns_monitor",
+    "data": {
+      "event_type": "anomalous_dns",
+      "hostname": "WS-DEV-12",
+      "username": "d.chen",
+      "query_count": 4500,
+      "unique_subdomains": 4200,
+      "domain": "data.evil-c2.xyz",
+      "avg_query_length": 180,
+      "timeframe": "30 minutes",
+      "src_ip": "192.168.5.112",
+      "severity": "critical",
+      "message": "Possible DNS exfiltration: 4500 queries to data.evil-c2.xyz with 4200 unique subdomains in 30 minutes"
+    }
+  },
+  {
+    "name": "SQL Injection Attempt",
+    "source": "waf",
+    "data": {
+      "event_type": "sql_injection",
+      "src_ip": "103.245.67.89",
+      "dst_ip": "10.0.2.50",
+      "dst_port": 443,
+      "url": "/api/users?id=1' OR '1'='1",
+      "method": "GET",
+      "user_agent": "sqlmap/1.7",
+      "severity": "high",
+      "message": "SQL injection attempt detected from 103.245.67.89 using sqlmap against /api/users"
+    }
+  },
+  {
+    "name": "Lateral Movement - PsExec",
+    "source": "edr",
+    "data": {
+      "event_type": "lateral_movement",
+      "src_ip": "192.168.1.45",
+      "dst_ip": "192.168.1.100",
+      "hostname": "SVR-DC-01",
+      "username": "admin_compromised",
+      "process": "psexec.exe",
+      "parent_process": "cmd.exe",
+      "command_line": "psexec \\\\192.168.1.100 -u admin_compromised cmd.exe",
+      "severity": "critical",
+      "message": "PsExec lateral movement from 192.168.1.45 to domain controller 192.168.1.100"
+    }
+  },
+  {
+    "name": "C2 Beacon Communication",
+    "source": "ndr",
+    "data": {
+      "event_type": "c2_beacon",
+      "src_ip": "192.168.3.77",
+      "dst_ip": "185.220.101.34",
+      "dst_port": 443,
+      "hostname": "WS-MARKETING-09",
+      "beacon_interval": "60 seconds",
+      "jitter": "10%",
+      "data_sent_bytes": 256,
+      "data_received_bytes": 1024,
+      "connection_count": 48,
+      "timeframe": "1 hour",
+      "severity": "critical",
+      "message": "Periodic beacon pattern detected from WS-MARKETING-09 to 185.220.101.34 every 60s with 10% jitter"
+    }
+  },
+  {
+    "name": "Credential Stuffing Attack",
+    "source": "waf",
+    "data": {
+      "event_type": "credential_stuffing",
+      "src_ips": ["198.51.100.1", "198.51.100.2", "198.51.100.3"],
+      "dst_ip": "10.0.2.50",
+      "dst_port": 443,
+      "url": "/api/auth/login",
+      "total_attempts": 15000,
+      "unique_usernames": 12000,
+      "success_rate": "0.3%",
+      "timeframe": "1 hour",
+      "severity": "high",
+      "message": "Credential stuffing attack: 15000 login attempts from 3 IPs with 12000 unique usernames"
+    }
+  },
+  {
+    "name": "Privilege Escalation - Linux",
+    "source": "edr",
+    "data": {
+      "event_type": "privilege_escalation",
+      "hostname": "SVR-WEB-03",
+      "username": "www-data",
+      "process": "bash",
+      "parent_process": "apache2",
+      "command_line": "sudo -u root /tmp/exploit.sh",
+      "src_ip": "10.0.3.15",
+      "severity": "critical",
+      "message": "Privilege escalation attempt: www-data user trying to execute /tmp/exploit.sh as root via sudo"
+    }
+  },
+  {
+    "name": "Port Scan - Internal",
+    "source": "ids",
+    "data": {
+      "event_type": "port_scan",
+      "src_ip": "192.168.1.200",
+      "scan_type": "SYN",
+      "ports_scanned": 1024,
+      "targets": ["192.168.1.1", "192.168.1.10", "192.168.1.20", "192.168.1.50"],
+      "timeframe": "2 minutes",
+      "severity": "medium",
+      "message": "Internal SYN port scan from 192.168.1.200 scanning 1024 ports across 4 targets"
+    }
+  },
+  {
+    "name": "Phishing Link Click",
+    "source": "email_gateway",
+    "data": {
+      "event_type": "phishing_click",
+      "hostname": "WS-HR-02",
+      "username": "m.johnson",
+      "email_from": "support@micros0ft-verify.com",
+      "email_subject": "Urgent: Verify Your Account",
+      "clicked_url": "https://micros0ft-verify.com/login",
+      "src_ip": "192.168.2.35",
+      "severity": "high",
+      "message": "User m.johnson on WS-HR-02 clicked phishing link from micros0ft-verify.com"
+    }
+  },
+  {
+    "name": "DDoS Indicators",
+    "source": "firewall",
+    "data": {
+      "event_type": "ddos_indicator",
+      "dst_ip": "203.0.113.10",
+      "dst_port": 80,
+      "packets_per_second": 500000,
+      "unique_src_ips": 25000,
+      "protocol": "UDP",
+      "amplification_factor": 50,
+      "severity": "high",
+      "message": "Possible UDP amplification DDoS: 500K pps from 25000 unique IPs targeting 203.0.113.10:80"
+    }
+  },
+  {
+    "name": "Malware Download",
+    "source": "proxy",
+    "data": {
+      "event_type": "malware_download",
+      "hostname": "WS-SALES-07",
+      "username": "r.patel",
+      "src_ip": "192.168.4.88",
+      "url": "http://downloads.sketchy-site.ru/invoice.exe",
+      "file_name": "invoice.exe",
+      "file_size": "2.4MB",
+      "hash_sha256": "deadbeef1234567890abcdef1234567890abcdef1234567890abcdef12345678",
+      "content_type": "application/x-executable",
+      "severity": "high",
+      "message": "Executable downloaded from sketchy-site.ru by r.patel on WS-SALES-07"
+    }
+  },
+  {
+    "name": "Data Exfiltration via USB",
+    "source": "dlp",
+    "data": {
+      "event_type": "usb_data_transfer",
+      "hostname": "WS-EXEC-01",
+      "username": "c.thompson",
+      "device_type": "USB Mass Storage",
+      "device_vendor": "SanDisk",
+      "files_copied": 156,
+      "total_size_mb": 2400,
+      "sensitive_files": 23,
+      "classification": "confidential",
+      "severity": "high",
+      "message": "Large USB data transfer: 156 files (2.4GB) including 23 confidential files copied by c.thompson"
+    }
+  },
+  {
+    "name": "False Positive - IT Admin SSH",
+    "source": "ids",
+    "data": {
+      "event_type": "ssh_connection",
+      "src_ip": "10.50.0.15",
+      "dst_ip": "10.0.1.5",
+      "dst_port": 22,
+      "username": "sysadmin",
+      "description": "SSH session established from IT management subnet",
+      "severity": "low",
+      "message": "SSH connection from 10.50.0.15 (IT subnet) to 10.0.1.5 by sysadmin"
+    }
+  },
+  {
+    "name": "False Positive - Scheduled Backup",
+    "source": "edr",
+    "data": {
+      "event_type": "large_file_operation",
+      "hostname": "SVR-BACKUP-01",
+      "username": "backup_svc",
+      "process": "rsync",
+      "files_accessed": 50000,
+      "total_size_gb": 150,
+      "timeframe": "2 hours",
+      "severity": "low",
+      "message": "Large file operation by backup_svc on SVR-BACKUP-01: 50000 files, 150GB via rsync"
+    }
+  },
+  {
+    "name": "False Positive - Vulnerability Scanner",
+    "source": "ids",
+    "data": {
+      "event_type": "port_scan",
+      "src_ip": "10.50.1.100",
+      "scan_type": "full_connect",
+      "ports_scanned": 65535,
+      "targets": ["10.0.0.0/24"],
+      "severity": "medium",
+      "message": "Full port scan from 10.50.1.100 (authorized Nessus scanner) against 10.0.0.0/24"
+    }
+  },
+  {
+    "name": "Suspicious PowerShell Execution",
+    "source": "edr",
+    "data": {
+      "event_type": "suspicious_powershell",
+      "hostname": "WS-ACCT-03",
+      "username": "a.williams",
+      "process": "powershell.exe",
+      "parent_process": "winword.exe",
+      "command_line": "powershell -enc SQBFAFgAIAAoAE4AZQB3AC0ATwBiAGoAZQBjAHQA...",
+      "is_encoded": true,
+      "is_obfuscated": true,
+      "src_ip": "192.168.1.33",
+      "severity": "high",
+      "message": "Encoded PowerShell launched from Word document on WS-ACCT-03 by a.williams"
+    }
+  },
+  {
+    "name": "Unauthorized Cloud Storage Upload",
+    "source": "casb",
+    "data": {
+      "event_type": "unauthorized_upload",
+      "hostname": "WS-ENG-15",
+      "username": "k.lee",
+      "service": "personal Dropbox",
+      "files_uploaded": 12,
+      "total_size_mb": 340,
+      "file_types": [".xlsx", ".docx", ".pdf"],
+      "classification": "internal",
+      "severity": "medium",
+      "message": "Unauthorized upload of 12 internal files (340MB) to personal Dropbox by k.lee"
+    }
+  },
+  {
+    "name": "TOR Exit Node Connection",
+    "source": "firewall",
+    "data": {
+      "event_type": "tor_connection",
+      "src_ip": "192.168.5.200",
+      "dst_ip": "176.10.99.200",
+      "dst_port": 443,
+      "hostname": "WS-RESEARCH-02",
+      "username": "j.garcia",
+      "is_tor_exit": true,
+      "severity": "medium",
+      "message": "Connection to known TOR exit node 176.10.99.200 from WS-RESEARCH-02"
+    }
+  },
+  {
+    "name": "Account Lockout Spike",
+    "source": "active_directory",
+    "data": {
+      "event_type": "account_lockout_spike",
+      "affected_accounts": 45,
+      "timeframe": "10 minutes",
+      "source_workstations": ["WS-LOBBY-01", "WS-LOBBY-02"],
+      "domain_controller": "DC-01",
+      "severity": "medium",
+      "message": "45 account lockouts in 10 minutes originating from lobby workstations"
+    }
+  },
+  {
+    "name": "CEF Format - Firewall Block",
+    "source": "syslog",
+    "data": {
+      "message": "CEF:0|PaloAlto|Firewall|10.0|threat|Malware Download Blocked|9|src=192.168.1.50 dst=198.51.100.50 dpt=443 suser=t.wong dhost=WS-IT-05 msg=Blocked download of known malware from malicious-download.com"
+    }
+  },
+  {
+    "name": "Syslog Format - IDS Alert",
+    "source": "syslog",
+    "data": {
+      "message": "<131>1 2025-01-15T14:30:00Z IDS-01 snort 1234 - - [1:2001219:20] ET MALWARE Known Malicious User-Agent detected src=10.0.1.50 dst=198.51.100.100",
+      "hostname": "IDS-01",
+      "severity": 3,
+      "timestamp": "2025-01-15T14:30:00Z"
+    }
+  }
+]

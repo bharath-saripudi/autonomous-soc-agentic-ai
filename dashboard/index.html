@@ -1,0 +1,2587 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Autonomous SOC — Threat Operations Center</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════
+   DESIGN SYSTEM — Carbon Dark / SOC Operations Theme
+   Inspired by: IBM QRadar, Splunk SOAR, CrowdStrike Falcon
+   ═══════════════════════════════════════════════════════ */
+
+:root {
+  /* Carbon Palette */
+  --bg-void: #0a0a0f;
+  --bg-primary: #0d0d14;
+  --bg-secondary: #12121c;
+  --bg-elevated: #181825;
+  --bg-surface: #1e1e2e;
+  --bg-hover: #252538;
+  --border-subtle: rgba(255,255,255,0.06);
+  --border-active: rgba(255,255,255,0.12);
+
+  /* Text Hierarchy */
+  --text-primary: #e4e4ef;
+  --text-secondary: #8888a4;
+  --text-tertiary: #5a5a72;
+  --text-disabled: #3a3a4c;
+
+  /* Severity Spectrum */
+  --critical: #ff3b5c;
+  --critical-bg: rgba(255,59,92,0.12);
+  --critical-glow: rgba(255,59,92,0.3);
+  --high: #ff8b3e;
+  --high-bg: rgba(255,139,62,0.12);
+  --medium: #ffd43e;
+  --medium-bg: rgba(255,212,62,0.1);
+  --low: #3edfcf;
+  --low-bg: rgba(62,223,207,0.1);
+  --info: #5b8def;
+  --info-bg: rgba(91,141,239,0.1);
+  --fp: #666680;
+  --fp-bg: rgba(102,102,128,0.1);
+
+  /* Accent */
+  --accent: #5b8def;
+  --accent-bright: #7da8ff;
+  --accent-dim: rgba(91,141,239,0.15);
+  --success: #3edfcf;
+  --success-bg: rgba(62,223,207,0.1);
+
+  /* Fonts */
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+  --font-sans: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* Dimensions */
+  --sidebar-w: 56px;
+  --topbar-h: 48px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  height: 100%; width: 100%;
+  background: var(--bg-void);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.5;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection { background: var(--accent); color: #fff; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-active); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-tertiary); }
+
+/* ═══════════════════════════════════════════════════════
+   LAYOUT SHELL
+   ═══════════════════════════════════════════════════════ */
+
+.app-shell {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) 1fr;
+  grid-template-rows: var(--topbar-h) 1fr;
+  grid-template-areas:
+    "sidebar topbar"
+    "sidebar main";
+  height: 100vh;
+  width: 100vw;
+}
+
+/* ── Sidebar ── */
+.sidebar {
+  grid-area: sidebar;
+  background: var(--bg-primary);
+  border-right: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 0;
+  gap: 4px;
+  z-index: 100;
+}
+
+.sidebar-logo {
+  width: 32px; height: 32px;
+  margin-bottom: 16px;
+  position: relative;
+}
+
+.sidebar-logo svg { width: 100%; height: 100%; }
+
+.sidebar-logo::after {
+  content: '';
+  position: absolute;
+  bottom: -8px; left: 50%;
+  transform: translateX(-50%);
+  width: 20px; height: 1px;
+  background: var(--border-active);
+}
+
+.nav-btn {
+  width: 40px; height: 40px;
+  border: none; background: transparent;
+  color: var(--text-tertiary);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.nav-btn:hover { background: var(--bg-hover); color: var(--text-secondary); }
+.nav-btn.active { background: var(--accent-dim); color: var(--accent-bright); }
+
+.nav-btn .badge {
+  position: absolute; top: 4px; right: 4px;
+  width: 8px; height: 8px;
+  background: var(--critical);
+  border-radius: 50%;
+  border: 2px solid var(--bg-primary);
+  animation: pulse-dot 2s infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.sidebar-bottom { margin-top: auto; display: flex; flex-direction: column; gap: 4px; }
+
+/* ── Top Bar ── */
+.topbar {
+  grid-area: topbar;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex;
+  align-items: center;
+  padding: 0 20px;
+  gap: 16px;
+  z-index: 90;
+}
+
+.topbar-title {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.topbar-title span { color: var(--accent-bright); }
+
+.topbar-divider { width: 1px; height: 24px; background: var(--border-subtle); }
+
+.live-indicator {
+  display: flex; align-items: center; gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 11px; font-weight: 500;
+  color: var(--success);
+  letter-spacing: 0.3px;
+}
+
+.live-dot {
+  width: 6px; height: 6px;
+  background: var(--success);
+  border-radius: 50%;
+  animation: pulse-live 1.5s ease-in-out infinite;
+  box-shadow: 0 0 6px var(--success);
+}
+
+@keyframes pulse-live {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.85); }
+}
+
+.topbar-stats {
+  display: flex; gap: 20px; margin-left: auto;
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.topbar-stat {
+  display: flex; align-items: center; gap: 6px;
+  color: var(--text-secondary);
+}
+
+.topbar-stat .val { color: var(--text-primary); font-weight: 600; }
+.topbar-stat .val.critical-val { color: var(--critical); }
+.topbar-stat .val.high-val { color: var(--high); }
+
+.topbar-clock {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+  letter-spacing: 0.5px;
+}
+
+/* ── Main Content ── */
+.main-content {
+  grid-area: main;
+  background: var(--bg-void);
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* ═══════════════════════════════════════════════════════
+   PAGE — OVERVIEW (Dashboard)
+   ═══════════════════════════════════════════════════════ */
+
+.page { display: none; height: 100%; }
+.page.active { display: flex; flex-direction: column; }
+
+/* KPI Strip */
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 1px;
+  background: var(--border-subtle);
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+}
+
+.kpi-card {
+  background: var(--bg-primary);
+  padding: 14px 18px;
+  position: relative;
+  overflow: hidden;
+}
+
+.kpi-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0;
+  width: 100%; height: 2px;
+}
+
+.kpi-card.critical-accent::before { background: var(--critical); }
+.kpi-card.high-accent::before { background: var(--high); }
+.kpi-card.medium-accent::before { background: var(--medium); }
+.kpi-card.accent-accent::before { background: var(--accent); }
+.kpi-card.success-accent::before { background: var(--success); }
+.kpi-card.info-accent::before { background: var(--info); }
+
+.kpi-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-tertiary);
+  margin-bottom: 6px;
+  font-family: var(--font-mono);
+}
+
+.kpi-value {
+  font-family: var(--font-mono);
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text-primary);
+}
+
+.kpi-sub {
+  font-size: 10px;
+  color: var(--text-tertiary);
+  margin-top: 4px;
+  font-family: var(--font-mono);
+}
+
+.kpi-sub .up { color: var(--critical); }
+.kpi-sub .down { color: var(--success); }
+
+/* Dashboard Grid */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 340px;
+  grid-template-rows: 1fr 1fr;
+  gap: 1px;
+  background: var(--border-subtle);
+  flex: 1;
+  min-height: 0;
+}
+
+.panel {
+  background: var(--bg-primary);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--border-subtle);
+  flex-shrink: 0;
+  gap: 8px;
+}
+
+.panel-title {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-secondary);
+}
+
+.panel-badge {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 3px;
+  background: var(--accent-dim);
+  color: var(--accent-bright);
+}
+
+.panel-actions { margin-left: auto; display: flex; gap: 4px; }
+
+.panel-btn {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 3px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.panel-btn:hover { border-color: var(--border-active); color: var(--text-secondary); }
+.panel-btn.active { border-color: var(--accent); color: var(--accent-bright); background: var(--accent-dim); }
+
+.panel-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0;
+  min-height: 0;
+}
+
+/* ── Alert Table ── */
+.alert-table { width: 100%; border-collapse: collapse; }
+
+.alert-table th {
+  position: sticky; top: 0; z-index: 5;
+  background: var(--bg-secondary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-tertiary);
+  padding: 8px 12px;
+  text-align: left;
+  border-bottom: 1px solid var(--border-subtle);
+  white-space: nowrap;
+}
+
+.alert-table td {
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 12px;
+  vertical-align: middle;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 280px;
+}
+
+.alert-table tr { transition: background 0.1s ease; cursor: pointer; }
+.alert-table tbody tr:hover { background: var(--bg-hover); }
+
+.alert-table tr.severity-critical { border-left: 2px solid var(--critical); }
+.alert-table tr.severity-high { border-left: 2px solid var(--high); }
+.alert-table tr.severity-medium { border-left: 2px solid var(--medium); }
+.alert-table tr.severity-low { border-left: 2px solid var(--low); }
+.alert-table tr.severity-info { border-left: 2px solid var(--info); }
+
+/* Severity Chips */
+.severity-chip {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 2px 8px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.severity-chip.critical { background: var(--critical-bg); color: var(--critical); }
+.severity-chip.high { background: var(--high-bg); color: var(--high); }
+.severity-chip.medium { background: var(--medium-bg); color: var(--medium); }
+.severity-chip.low { background: var(--low-bg); color: var(--low); }
+.severity-chip.info { background: var(--info-bg); color: var(--info); }
+.severity-chip.false_positive, .severity-chip.closed { background: var(--fp-bg); color: var(--fp); }
+
+/* Status Chips */
+.status-chip {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 2px;
+  display: inline-flex; align-items: center; gap: 4px;
+}
+
+.status-chip.responded { background: var(--accent-dim); color: var(--accent-bright); }
+.status-chip.closed { background: var(--fp-bg); color: var(--fp); }
+.status-chip.escalated { background: var(--critical-bg); color: var(--critical); }
+.status-chip.new, .status-chip.processing { background: var(--success-bg); color: var(--success); }
+
+.status-dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* Score Display */
+.score-display {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.td-time {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-tertiary);
+}
+
+/* ── Severity Distribution Bars ── */
+.severity-bars { padding: 16px; }
+
+.sev-bar-row {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 10px;
+}
+
+.sev-bar-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  width: 60px;
+  letter-spacing: 0.5px;
+}
+
+.sev-bar-track {
+  flex: 1;
+  height: 20px;
+  background: var(--bg-void);
+  border-radius: 2px;
+  overflow: hidden;
+  position: relative;
+}
+
+.sev-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+  position: relative;
+}
+
+.sev-bar-fill.critical { background: linear-gradient(90deg, var(--critical), #ff5c75); }
+.sev-bar-fill.high { background: linear-gradient(90deg, var(--high), #ffaa6e); }
+.sev-bar-fill.medium { background: linear-gradient(90deg, var(--medium), #ffe06e); }
+.sev-bar-fill.low { background: linear-gradient(90deg, var(--low), #6eeee0); }
+.sev-bar-fill.info { background: linear-gradient(90deg, var(--info), #7da8ff); }
+
+.sev-bar-count {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  width: 30px;
+  text-align: right;
+  color: var(--text-secondary);
+}
+
+/* ── Timeline Feed ── */
+.timeline-feed { padding: 0; }
+
+.timeline-item {
+  display: flex;
+  padding: 10px 16px;
+  gap: 10px;
+  border-bottom: 1px solid var(--border-subtle);
+  transition: background 0.1s ease;
+  cursor: pointer;
+}
+
+.timeline-item:hover { background: var(--bg-hover); }
+
+.timeline-dot-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 4px;
+}
+
+.timeline-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.timeline-dot.critical { background: var(--critical); box-shadow: 0 0 8px var(--critical-glow); }
+.timeline-dot.high { background: var(--high); }
+.timeline-dot.medium { background: var(--medium); }
+.timeline-dot.low { background: var(--low); }
+.timeline-dot.info { background: var(--info); }
+.timeline-dot.closed { background: var(--fp); }
+
+.timeline-line {
+  width: 1px; flex: 1;
+  background: var(--border-subtle);
+  margin-top: 4px;
+}
+
+.timeline-body { flex: 1; min-width: 0; }
+
+.timeline-header {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 3px;
+}
+
+.timeline-agent {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.timeline-time {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+  margin-left: auto;
+}
+
+.timeline-desc {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Actions Log ── */
+.action-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  gap: 10px;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 12px;
+}
+
+.action-icon {
+  width: 28px; height: 28px;
+  border-radius: var(--radius-sm);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  font-size: 14px;
+}
+
+.action-icon.block { background: var(--critical-bg); color: var(--critical); }
+.action-icon.isolate { background: var(--high-bg); color: var(--high); }
+.action-icon.kill { background: var(--medium-bg); color: var(--medium); }
+.action-icon.notify { background: var(--accent-dim); color: var(--accent-bright); }
+.action-icon.close { background: var(--fp-bg); color: var(--fp); }
+
+.action-details { flex: 1; min-width: 0; }
+
+.action-name {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.action-target {
+  font-size: 11px;
+  color: var(--text-tertiary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.action-time {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-tertiary);
+  flex-shrink: 0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   PAGE — ALERT DETAIL (Drill-Down)
+   ═══════════════════════════════════════════════════════ */
+
+.detail-page { padding: 0; }
+
+.detail-topbar {
+  display: flex;
+  align-items: center;
+  padding: 12px 20px;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-subtle);
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.btn-back {
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  color: var(--text-secondary);
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  cursor: pointer;
+  display: flex; align-items: center; gap: 6px;
+  transition: all 0.15s ease;
+}
+
+.btn-back:hover { border-color: var(--accent); color: var(--accent-bright); }
+
+.detail-alert-id {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--text-tertiary);
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 1px;
+  background: var(--border-subtle);
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.detail-main {
+  background: var(--bg-primary);
+  overflow-y: auto;
+  padding: 20px;
+}
+
+.detail-sidebar-panel {
+  background: var(--bg-primary);
+  overflow-y: auto;
+}
+
+.detail-section {
+  margin-bottom: 24px;
+}
+
+.detail-section-title {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-tertiary);
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.detail-meta-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+
+.detail-meta-item {
+  background: var(--bg-secondary);
+  padding: 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+}
+
+.detail-meta-label {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-tertiary);
+  margin-bottom: 4px;
+}
+
+.detail-meta-value {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.detail-reasoning {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+}
+
+.detail-raw-data {
+  background: var(--bg-void);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 14px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--text-secondary);
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+/* ═══════════════════════════════════════════════════════
+   PAGE — FEEDBACK
+   ═══════════════════════════════════════════════════════ */
+
+.feedback-page { padding: 20px; overflow-y: auto; }
+
+.feedback-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  margin-bottom: 12px;
+  transition: border-color 0.15s ease;
+}
+
+.feedback-card:hover { border-color: var(--border-active); }
+
+.feedback-card-header {
+  display: flex; align-items: center; gap: 12px;
+  margin-bottom: 14px;
+}
+
+.feedback-options {
+  display: flex; gap: 8px; flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.fb-option {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 6px 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.fb-option:hover { border-color: var(--accent); color: var(--accent-bright); }
+.fb-option.selected { background: var(--accent-dim); border-color: var(--accent); color: var(--accent-bright); }
+
+.fb-textarea {
+  width: 100%;
+  background: var(--bg-void);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  padding: 10px;
+  resize: vertical;
+  min-height: 60px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.fb-textarea:focus { border-color: var(--accent); }
+
+.fb-submit {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  padding: 8px 20px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  margin-top: 10px;
+  transition: all 0.15s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.fb-submit:hover { background: var(--accent-bright); }
+
+/* ═══════════════════════════════════════════════════════
+   UTILITY / ANIMATIONS
+   ═══════════════════════════════════════════════════════ */
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 40px;
+  color: var(--text-tertiary);
+  text-align: center;
+}
+
+.empty-state svg { opacity: 0.3; margin-bottom: 12px; }
+.empty-state p { font-size: 12px; }
+
+.loading-spinner {
+  width: 20px; height: 20px;
+  border: 2px solid var(--border-subtle);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.flash-new {
+  animation: flash-row 1.5s ease-out;
+}
+
+@keyframes flash-row {
+  0% { background: var(--accent-dim); }
+  100% { background: transparent; }
+}
+
+/* ── Severity Heatmap ── */
+.heatmap-grid {
+  display: grid;
+  grid-template-columns: repeat(24, 1fr);
+  gap: 2px;
+  padding: 16px;
+}
+
+.heatmap-cell {
+  aspect-ratio: 1;
+  border-radius: 2px;
+  background: rgba(255,255,255,0.03);
+  transition: background 0.3s ease;
+  position: relative;
+  min-height: 8px;
+}
+
+.heatmap-cell:hover { outline: 1px solid var(--text-tertiary); }
+
+.heatmap-cell[data-intensity="0"] { background: rgba(255,255,255,0.03); }
+.heatmap-cell[data-intensity="1"] { background: rgba(91,141,239,0.25); }
+.heatmap-cell[data-intensity="2"] { background: rgba(91,141,239,0.45); }
+.heatmap-cell[data-intensity="3"] { background: rgba(255,212,62,0.35); }
+.heatmap-cell[data-intensity="4"] { background: rgba(255,139,62,0.45); }
+.heatmap-cell[data-intensity="5"] { background: rgba(255,59,92,0.55); }
+
+.heatmap-labels {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 16px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-tertiary);
+}
+
+/* ── Tooltip ── */
+.tooltip {
+  position: fixed;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-active);
+  border-radius: var(--radius-sm);
+  padding: 6px 10px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-primary);
+  pointer-events: none;
+  z-index: 999;
+  display: none;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+}
+
+/* ── Filter Bar ── */
+.filter-bar {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  gap: 8px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--bg-secondary);
+}
+
+.filter-chip {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 2px;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.filter-chip:hover { border-color: var(--text-tertiary); color: var(--text-secondary); }
+.filter-chip.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent-bright); }
+
+.search-input {
+  background: var(--bg-void);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 5px 10px;
+  outline: none;
+  width: 200px;
+  margin-left: auto;
+  transition: border-color 0.15s ease;
+}
+
+.search-input::placeholder { color: var(--text-disabled); }
+.search-input:focus { border-color: var(--accent); }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- ═══ SIDEBAR ═══ -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <svg viewBox="0 0 32 32" fill="none">
+        <rect x="2" y="2" width="28" height="28" rx="6" stroke="var(--accent)" stroke-width="1.5"/>
+        <path d="M16 8 L22 12 L22 20 L16 24 L10 20 L10 12 Z" stroke="var(--accent-bright)" stroke-width="1.2" fill="var(--accent-dim)"/>
+        <circle cx="16" cy="16" r="3" fill="var(--accent-bright)"/>
+      </svg>
+    </div>
+    <button class="nav-btn active" data-page="overview" title="Dashboard">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+      <span class="badge"></span>
+    </button>
+    <button class="nav-btn" data-page="alerts" title="Alert Feed">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+    </button>
+    <button class="nav-btn" data-page="detail" title="Investigation">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    </button>
+    <button class="nav-btn" data-page="feedback" title="Analyst Feedback">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+    </button>
+    <button class="nav-btn" data-page="targets" title="Target Monitor">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
+    </button>
+    <button class="nav-btn" data-page="analytics" title="Analytics & Radar">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+    </button>
+    <div class="sidebar-bottom">
+      <button class="nav-btn" title="Settings">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      </button>
+    </div>
+  </nav>
+
+  <!-- ═══ TOP BAR ═══ -->
+  <header class="topbar">
+    <span class="topbar-title"><span>⬡</span> Autonomous SOC</span>
+    <span class="topbar-divider"></span>
+    <span class="live-indicator"><span class="live-dot"></span>LIVE</span>
+    <span class="topbar-divider"></span>
+    <div class="topbar-stats">
+      <span class="topbar-stat">Alerts <span class="val" id="topbar-total">—</span></span>
+      <span class="topbar-stat">Critical <span class="val critical-val" id="topbar-critical">—</span></span>
+      <span class="topbar-stat">High <span class="val high-val" id="topbar-high">—</span></span>
+      <span class="topbar-stat">FP Rate <span class="val" id="topbar-fp">—</span></span>
+      <span class="topbar-stat">MTTR <span class="val" id="topbar-mttr">—</span></span>
+    </div>
+    <span class="topbar-clock" id="topbar-clock"></span>
+    <button class="panel-btn" style="color:var(--critical);border-color:var(--critical-bg);font-size:10px" onclick="clearAllAlerts()">⟳ Reset</button>
+  </header>
+
+  <!-- ═══ MAIN ═══ -->
+  <main class="main-content">
+
+    <!-- ─── OVERVIEW PAGE ─── -->
+    <div class="page active" id="page-overview">
+      <div class="kpi-strip">
+        <div class="kpi-card critical-accent">
+          <div class="kpi-label">Total Alerts</div>
+          <div class="kpi-value" id="kpi-total">—</div>
+          <div class="kpi-sub" id="kpi-total-sub">loading...</div>
+        </div>
+        <div class="kpi-card high-accent">
+          <div class="kpi-label">Processed Today</div>
+          <div class="kpi-value" id="kpi-today">—</div>
+          <div class="kpi-sub">since 00:00 UTC</div>
+        </div>
+        <div class="kpi-card accent-accent">
+          <div class="kpi-label">Avg Triage Score</div>
+          <div class="kpi-value" id="kpi-avg-score">—</div>
+          <div class="kpi-sub">threat confidence</div>
+        </div>
+        <div class="kpi-card success-accent">
+          <div class="kpi-label">Auto-Resolved</div>
+          <div class="kpi-value" id="kpi-auto-resolved">—</div>
+          <div class="kpi-sub">without analyst</div>
+        </div>
+        <div class="kpi-card medium-accent">
+          <div class="kpi-label">False Positive %</div>
+          <div class="kpi-value" id="kpi-fp-rate">—</div>
+          <div class="kpi-sub">detection accuracy</div>
+        </div>
+        <div class="kpi-card info-accent">
+          <div class="kpi-label">Actions Executed</div>
+          <div class="kpi-value" id="kpi-actions">—</div>
+          <div class="kpi-sub">automated response</div>
+        </div>
+      </div>
+
+      <div class="dashboard-grid">
+        <!-- Recent Alerts Panel -->
+        <div class="panel" style="grid-column: 1 / 3; grid-row: 1;">
+          <div class="panel-header">
+            <span class="panel-title">Recent Alerts</span>
+            <span class="panel-badge" id="alert-count-badge">0</span>
+            <div class="panel-actions">
+              <button class="panel-btn active sev-filter" data-sev="all">All</button>
+              <button class="panel-btn sev-filter" data-sev="critical">Critical</button>
+              <button class="panel-btn sev-filter" data-sev="high">High</button>
+              <button class="panel-btn sev-filter" data-sev="low">Low</button>
+            </div>
+          </div>
+          <div class="panel-body">
+            <table class="alert-table">
+              <thead>
+                <tr>
+                  <th>Severity</th>
+                  <th>Score</th>
+                  <th>Description</th>
+                  <th>Source</th>
+                  <th>Status</th>
+                  <th>Time</th>
+                </tr>
+              </thead>
+              <tbody id="alerts-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Severity Distribution -->
+        <div class="panel" style="grid-column: 3; grid-row: 1;">
+          <div class="panel-header">
+            <span class="panel-title">Severity Breakdown</span>
+          </div>
+          <div class="panel-body severity-bars" id="severity-bars"></div>
+        </div>
+
+        <!-- Activity Timeline -->
+        <div class="panel" style="grid-column: 1; grid-row: 2;">
+          <div class="panel-header">
+            <span class="panel-title">Activity Timeline</span>
+            <span class="panel-badge" id="timeline-count">0</span>
+          </div>
+          <div class="panel-body timeline-feed" id="timeline-feed"></div>
+        </div>
+
+        <!-- Automated Actions -->
+        <div class="panel" style="grid-column: 2; grid-row: 2;">
+          <div class="panel-header">
+            <span class="panel-title">Automated Actions</span>
+            <span class="panel-badge" id="actions-count">0</span>
+          </div>
+          <div class="panel-body" id="actions-feed"></div>
+        </div>
+
+        <!-- Severity Donut -->
+        <div class="panel" style="grid-column: 3; grid-row: 2;">
+          <div class="panel-header">
+            <span class="panel-title">Severity Overview</span>
+          </div>
+          <div class="panel-body" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px;">
+            <canvas id="severity-donut" width="200" height="200"></canvas>
+            <div id="ml-comparison-panel" style="padding:8px 0;width:100%;border-top:1px solid var(--border-subtle);margin-top:8px;display:none;"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── ALERTS PAGE (Full Table) ─── -->
+    <div class="page" id="page-alerts">
+      <div class="filter-bar">
+        <button class="filter-chip active" data-filter="all">All</button>
+        <button class="filter-chip" data-filter="critical">Critical</button>
+        <button class="filter-chip" data-filter="high">High</button>
+        <button class="filter-chip" data-filter="medium">Medium</button>
+        <button class="filter-chip" data-filter="low">Low</button>
+        <button class="filter-chip" data-filter="closed">Closed / FP</button>
+        <input class="search-input" placeholder="Search alerts..." id="alert-search" />
+      </div>
+      <div style="flex:1; overflow-y:auto;">
+        <table class="alert-table">
+          <thead>
+            <tr>
+              <th>Severity</th>
+              <th>Score</th>
+              <th>Alert ID</th>
+              <th>Description</th>
+              <th>Source</th>
+              <th>Status</th>
+              <th>Actions</th>
+              <th>Time</th>
+            </tr>
+          </thead>
+          <tbody id="full-alerts-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ─── DETAIL PAGE ─── -->
+    <div class="page" id="page-detail">
+      <div class="detail-topbar">
+        <button class="btn-back" onclick="navigateTo('overview')">← Back</button>
+        <span class="detail-alert-id" id="detail-id">No alert selected</span>
+        <span id="detail-severity-chip"></span>
+        <span id="detail-status-chip" style="margin-left:auto;"></span>
+      </div>
+      <div class="detail-grid">
+        <div class="detail-main" id="detail-main-content">
+          <div class="empty-state">
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+            <p>Select an alert from the dashboard to investigate</p>
+          </div>
+        </div>
+        <div class="detail-sidebar-panel" id="detail-sidebar">
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── FEEDBACK PAGE ─── -->
+    <div class="page" id="page-feedback">
+      <div class="filter-bar">
+        <span class="panel-title" style="padding:0">Analyst Feedback Queue</span>
+        <span class="panel-badge" id="fb-queue-count">0</span>
+      </div>
+      <div class="feedback-page" id="feedback-list"></div>
+    </div>
+
+    <!-- ─── ANALYTICS PAGE ─── -->
+    <div class="page" id="page-analytics">
+      <div class="filter-bar">
+        <span class="panel-title" style="padding:0">Threat Analytics & Radar</span>
+        <span class="panel-badge" id="analytics-count">0</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr auto;gap:1px;background:var(--border-subtle);flex:1;min-height:0;overflow:hidden;">
+        <!-- Large Threat Radar -->
+        <div class="panel" style="grid-row:1/3;">
+          <div class="panel-header">
+            <span class="panel-title">24h Threat Radar</span>
+          </div>
+          <div class="panel-body" style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;">
+            <canvas id="threat-radar-big" width="500" height="500" style="max-width:100%;max-height:80vh;"></canvas>
+            <div style="display:flex;gap:16px;margin-top:12px;font-family:var(--font-mono);font-size:10px;">
+              <span style="color:var(--critical)">● Critical</span>
+              <span style="color:var(--high)">● High</span>
+              <span style="color:var(--medium)">● Medium</span>
+              <span style="color:var(--low)">● Low</span>
+              <span style="color:var(--info)">● Info</span>
+            </div>
+          </div>
+        </div>
+        <!-- Severity Donut (large) -->
+        <div class="panel">
+          <div class="panel-header"><span class="panel-title">Severity Distribution</span></div>
+          <div class="panel-body" style="display:flex;align-items:center;justify-content:center;padding:20px;">
+            <canvas id="analytics-donut" width="280" height="280"></canvas>
+          </div>
+        </div>
+        <!-- Attack Type Breakdown -->
+        <div class="panel">
+          <div class="panel-header"><span class="panel-title">Attack Types</span></div>
+          <div class="panel-body" id="attack-type-bars" style="padding:16px;overflow-y:auto;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ─── TARGETS PAGE ─── -->
+    <div class="page" id="page-targets">
+      <div class="filter-bar" style="gap:12px;">
+        <span class="panel-title" style="padding:0">Target Monitor</span>
+        <span class="panel-badge" id="targets-count">0</span>
+        <div style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+          <input class="search-input" id="target-url-input" placeholder="http://testphp.vulnweb.com" style="width:280px;" />
+          <button class="fb-submit" style="margin:0;padding:6px 16px;" onclick="addTarget()">+ Add Target</button>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:320px 1fr;gap:1px;background:var(--border-subtle);flex:1;min-height:0;overflow:hidden;">
+        <!-- Target List -->
+        <div class="panel">
+          <div class="panel-header"><span class="panel-title">Monitored Targets</span></div>
+          <div class="panel-body" id="targets-list" style="padding:0;"></div>
+        </div>
+        <!-- Target Detail -->
+        <div class="panel">
+          <div class="panel-header">
+            <span class="panel-title" id="target-detail-title">Select a target</span>
+            <div class="panel-actions">
+              <button class="panel-btn" onclick="scanSelectedTarget()">▶ Scan Now</button>
+              <button class="panel-btn" onclick="simulateAttackOnTarget()">⚡ Simulate Attack</button>
+            </div>
+          </div>
+          <div class="panel-body" id="target-detail-body" style="padding:16px;">
+            <div class="empty-state">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
+              <p>Add a target URL above to start monitoring</p>
+              <p style="font-size:11px;color:var(--text-disabled);margin-top:4px">Try: http://testphp.vulnweb.com</p>
+              <div style="margin-top:16px;text-align:left;background:var(--bg-secondary);padding:12px;border-radius:6px;border:1px solid var(--border-subtle);max-width:400px;">
+                <div style="font-family:var(--font-mono);font-size:10px;font-weight:600;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:6px">Live Browser Monitoring</div>
+                <p style="font-size:11px;color:var(--text-secondary);margin-bottom:8px">To auto-detect attacks while you browse a target:</p>
+                <p style="font-size:11px;color:var(--text-secondary)">1. Open the target site in Chrome</p>
+                <p style="font-size:11px;color:var(--text-secondary)">2. Press F12 → Console tab</p>
+                <p style="font-size:11px;color:var(--text-secondary)">3. Paste this:</p>
+                <code style="display:block;background:var(--bg-void);padding:8px;border-radius:4px;font-family:var(--font-mono);font-size:10px;color:var(--accent-bright);margin-top:4px;word-break:break-all">fetch("http://localhost:8000/inject.js").then(r=>r.text()).then(eval)</code>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div class="tooltip" id="tooltip"></div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   AUTONOMOUS SOC — DASHBOARD ENGINE
+   Enterprise-grade real-time security operations dashboard
+   ═══════════════════════════════════════════════════════════ */
+
+const API = 'http://localhost:8000';
+const WS_URL = 'ws://localhost:8000/ws/alerts';
+
+// ── State ──
+let state = {
+  alerts: [],
+  overview: null,
+  pipeline: null,
+  learning: null,
+  currentFilter: 'all',
+  searchQuery: '',
+  selectedAlert: null,
+  ws: null,
+  wsRetries: 0,
+};
+
+// ── Helpers ──
+function getSeverity(score) {
+  if (score >= 0.9) return 'critical';
+  if (score >= 0.7) return 'high';
+  if (score >= 0.4) return 'medium';
+  if (score >= 0.16) return 'low';
+  return 'info';
+}
+
+function getSeverityFromClassification(c) {
+  if (!c) return 'info';
+  if (c.includes('critical')) return 'critical';
+  if (c.includes('high')) return 'high';
+  if (c.includes('medium')) return 'medium';
+  if (c.includes('low')) return 'low';
+  if (c.includes('false')) return 'closed';
+  return 'info';
+}
+
+function formatTime(iso) {
+  if (!iso) return '—';
+  var ts = String(iso);
+  if (!ts.endsWith('Z') && !ts.includes('+')) ts += 'Z';
+  const d = new Date(ts);
+  return d.toLocaleTimeString('en-US', { hour12: false, hour:'2-digit', minute:'2-digit', second:'2-digit' });
+}
+
+function formatTimeAgo(iso) {
+  if (!iso) return '';
+  // API returns UTC timestamps without Z — force UTC parsing
+  var ts = String(iso);
+  if (!ts.endsWith('Z') && !ts.includes('+')) ts += 'Z';
+  const secs = Math.floor((Date.now() - new Date(ts).getTime()) / 1000);
+  if (secs < 0) return 'just now';
+  if (secs < 60) return `${secs}s ago`;
+  if (secs < 3600) return `${Math.floor(secs/60)}m ago`;
+  if (secs < 86400) return `${Math.floor(secs/3600)}h ago`;
+  return `${Math.floor(secs/86400)}d ago`;
+}
+
+function truncate(s, n=80) {
+  if (!s) return '—';
+  return s.length > n ? s.slice(0, n) + '…' : s;
+}
+
+function scorePercent(score) {
+  if (score == null || score === undefined) return '—';
+  return Math.round(score * 100) + '%';
+}
+
+function getDescription(alert) {
+  if (alert.triage_reasoning) return alert.triage_reasoning;
+  if (alert.normalized?.description) return alert.normalized.description;
+  if (alert.normalized?.event_type) return alert.normalized.event_type;
+  return alert.source || 'Unknown alert';
+}
+
+// ── Clock ──
+function updateClock() {
+  const now = new Date();
+  document.getElementById('topbar-clock').textContent = 
+    now.toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ── Navigation ──
+function navigateTo(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn[data-page]').forEach(b => b.classList.remove('active'));
+  const pageEl = document.getElementById('page-' + page);
+  const btnEl = document.querySelector(`.nav-btn[data-page="${page}"]`);
+  if (pageEl) pageEl.classList.add('active');
+  if (btnEl) btnEl.classList.add('active');
+}
+
+document.querySelectorAll('.nav-btn[data-page]').forEach(btn => {
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const page = btn.dataset.page;
+    console.log('[NAV] Navigating to:', page);
+    navigateTo(page);
+  });
+});
+
+// ── API Calls ──
+async function fetchJSON(url) {
+  try {
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return await r.json();
+  } catch (e) {
+    console.warn('API fetch failed:', url, e.message);
+    return null;
+  }
+}
+
+async function loadAlerts() {
+  const data = await fetchJSON(`${API}/alerts?per_page=100`);
+  if (data && data.alerts) {
+    state.alerts = data.alerts;
+    renderAlerts();
+    renderFullAlerts();
+    renderTimeline();
+    renderActions();
+    renderFeedbackQueue();
+    updateTopbarStats();
+  }
+}
+
+async function loadOverview() {
+  const data = await fetchJSON(`${API}/stats/overview`);
+  if (data) {
+    state.overview = data;
+    renderKPIs();
+    renderSeverityBars();
+  }
+}
+
+async function loadPipeline() {
+  const data = await fetchJSON(`${API}/stats/pipeline`);
+  if (data) {
+    state.pipeline = data;
+  }
+}
+
+// ── WebSocket ──
+function connectWS() {
+  try {
+    state.ws = new WebSocket(WS_URL);
+    state.ws.onopen = () => {
+      console.log('[WS] Connected');
+      state.wsRetries = 0;
+      document.querySelector('.live-indicator').style.color = 'var(--success)';
+    };
+    state.ws.onmessage = (e) => {
+      try {
+        const msg = JSON.parse(e.data);
+        if (msg.event === 'alert_processed') {
+          loadAlerts();
+          loadOverview();
+        }
+      } catch (err) {}
+    };
+    state.ws.onclose = () => {
+      console.log('[WS] Disconnected, retrying...');
+      document.querySelector('.live-indicator').style.color = 'var(--text-tertiary)';
+      state.wsRetries++;
+      setTimeout(connectWS, Math.min(1000 * Math.pow(2, state.wsRetries), 30000));
+    };
+    state.ws.onerror = () => { state.ws.close(); };
+  } catch (e) { console.warn('[WS] Failed:', e); }
+}
+
+// ── Render: KPIs ──
+function renderKPIs() {
+  const o = state.overview;
+  if (!o) return;
+  document.getElementById('kpi-total').textContent = o.total_alerts || 0;
+  document.getElementById('kpi-today').textContent = o.alerts_today || 0;
+  document.getElementById('kpi-avg-score').textContent = o.avg_triage_score != null ? scorePercent(o.avg_triage_score) : '—';
+  document.getElementById('kpi-fp-rate').textContent = (o.false_positive_rate || 0).toFixed(1) + '%';
+
+  // Count auto-resolved from API or loaded alerts
+  const autoResolved = o.auto_resolved || state.alerts.filter(a => a.status === 'responded' || a.status === 'closed').length;
+  document.getElementById('kpi-auto-resolved').textContent = autoResolved;
+
+  // Count total actions
+  let totalActions = 0;
+  state.alerts.forEach(a => {
+    if (a.actions_taken) totalActions += a.actions_taken.length;
+  });
+  document.getElementById('kpi-actions').textContent = totalActions;
+
+  // Sub text
+  const sub = document.getElementById('kpi-total-sub');
+  if (sub) {
+    if (o.total_alerts === 0) {
+      sub.innerHTML = 'no alerts yet';
+    } else {
+      sub.innerHTML = `<span class="${o.alerts_today > 10 ? 'up' : 'down'}">${o.alerts_today > 10 ? '↑' : '↓'} ${o.alerts_today} today</span>`;
+    }
+  }
+}
+
+function updateTopbarStats() {
+  const total = state.alerts.length;
+  const critical = state.alerts.filter(a => getSeverity(a.triage_score) === 'critical').length;
+  const high = state.alerts.filter(a => getSeverity(a.triage_score) === 'high').length;
+  const fp = state.alerts.filter(a => a.is_false_positive).length;
+  const fpRate = total > 0 ? ((fp / total) * 100).toFixed(1) : '0.0';
+
+  document.getElementById('topbar-total').textContent = total;
+  document.getElementById('topbar-critical').textContent = critical;
+  document.getElementById('topbar-high').textContent = high;
+  document.getElementById('topbar-fp').textContent = fpRate + '%';
+  document.getElementById('topbar-mttr').textContent = '~15s';
+}
+
+// ── Render: Severity Bars ──
+function renderSeverityBars() {
+  const o = state.overview;
+  if (!o || !o.severity_distribution) return;
+  const dist = o.severity_distribution;
+  const max = Math.max(...Object.values(dist), 1);
+  const container = document.getElementById('severity-bars');
+
+  const rows = ['critical','high','medium','low','info'].map(sev => {
+    const count = dist[sev] || 0;
+    const pct = (count / max * 100).toFixed(0);
+    return `
+      <div class="sev-bar-row">
+        <span class="sev-bar-label" style="color:var(--${sev})">${sev}</span>
+        <div class="sev-bar-track">
+          <div class="sev-bar-fill ${sev}" style="width:${pct}%"></div>
+        </div>
+        <span class="sev-bar-count">${count}</span>
+      </div>
+    `;
+  }).join('');
+
+  container.innerHTML = rows;
+}
+
+// ── Render: Alert Table ──
+function renderAlerts() {
+  const tbody = document.getElementById('alerts-tbody');
+  const alerts = filterAlerts(state.alerts).slice(0, 30);
+  document.getElementById('alert-count-badge').textContent = state.alerts.length;
+
+  tbody.innerHTML = alerts.map(a => {
+    const sev = a.is_false_positive ? 'closed' : getSeverity(a.triage_score);
+    const desc = getDescription(a);
+    return `
+      <tr class="severity-${sev}" data-id="${a.id}" onclick="openAlert('${a.id}')">
+        <td><span class="severity-chip ${sev}">${sev}</span></td>
+        <td><span class="score-display" style="color:var(--${sev === 'closed' ? 'fp' : sev})">${scorePercent(a.triage_score)}</span></td>
+        <td title="${desc}">${truncate(desc, 65)}</td>
+        <td><span style="color:var(--text-tertiary)">${a.source || '—'}</span></td>
+        <td><span class="status-chip ${a.status}"><span class="status-dot"></span>${a.status}</span></td>
+        <td class="td-time">${formatTimeAgo(a.created_at)}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function renderFullAlerts() {
+  const tbody = document.getElementById('full-alerts-tbody');
+  let alerts = state.alerts;
+
+  // Apply page-level filter
+  const activeFilter = document.querySelector('.filter-chip.active');
+  const filter = activeFilter ? activeFilter.dataset.filter : 'all';
+  if (filter !== 'all') {
+    if (filter === 'closed') {
+      alerts = alerts.filter(a => a.status === 'closed' || a.is_false_positive);
+    } else {
+      alerts = alerts.filter(a => getSeverity(a.triage_score) === filter);
+    }
+  }
+
+  // Search
+  const query = state.searchQuery.toLowerCase();
+  if (query) {
+    alerts = alerts.filter(a => {
+      const desc = getDescription(a).toLowerCase();
+      const id = (a.id || '').toLowerCase();
+      const source = (a.source || '').toLowerCase();
+      return desc.includes(query) || id.includes(query) || source.includes(query);
+    });
+  }
+
+  tbody.innerHTML = alerts.map(a => {
+    const sev = a.is_false_positive ? 'closed' : getSeverity(a.triage_score);
+    const desc = getDescription(a);
+    const actionCount = a.actions_taken ? a.actions_taken.length : 0;
+    return `
+      <tr class="severity-${sev}" onclick="openAlert('${a.id}')">
+        <td><span class="severity-chip ${sev}">${sev}</span></td>
+        <td><span class="score-display" style="color:var(--${sev === 'closed' ? 'fp' : sev})">${scorePercent(a.triage_score)}</span></td>
+        <td class="td-time">${(a.id || '').slice(0, 8)}…</td>
+        <td title="${desc}">${truncate(desc, 55)}</td>
+        <td style="color:var(--text-tertiary)">${a.source || '—'}</td>
+        <td><span class="status-chip ${a.status}"><span class="status-dot"></span>${a.status}</span></td>
+        <td style="text-align:center;color:${actionCount > 0 ? 'var(--accent-bright)' : 'var(--text-tertiary)'}">${actionCount}</td>
+        <td class="td-time">${formatTime(a.created_at)}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function filterAlerts(alerts) {
+  const filter = state.currentFilter;
+  if (filter === 'all') return alerts;
+  if (filter === 'closed') return alerts.filter(a => a.status === 'closed' || a.is_false_positive);
+  return alerts.filter(a => getSeverity(a.triage_score) === filter);
+}
+
+// ── Render: Timeline ──
+function renderTimeline() {
+  const feed = document.getElementById('timeline-feed');
+  const items = [];
+
+  state.alerts.slice(0, 20).forEach(a => {
+    const sev = a.is_false_positive ? 'closed' : getSeverity(a.triage_score);
+    items.push({
+      time: a.created_at,
+      sev,
+      agent: 'triage',
+      desc: `Score: ${scorePercent(a.triage_score)} — ${truncate(getDescription(a), 60)}`,
+      alertId: a.id,
+    });
+    if (a.actions_taken) {
+      a.actions_taken.forEach(act => {
+        items.push({
+          time: a.created_at,
+          sev: act.action === 'block_ip' ? 'critical' : act.action === 'isolate_host' ? 'high' : 'medium',
+          agent: 'response',
+          desc: `${act.action} → ${act.target || 'N/A'}`,
+          alertId: a.id,
+        });
+      });
+    }
+  });
+
+  items.sort((a, b) => new Date(b.time) - new Date(a.time));
+  document.getElementById('timeline-count').textContent = items.length;
+
+  feed.innerHTML = items.slice(0, 30).map(item => `
+    <div class="timeline-item" onclick="openAlert('${item.alertId}')">
+      <div class="timeline-dot-col">
+        <div class="timeline-dot ${item.sev}"></div>
+        <div class="timeline-line"></div>
+      </div>
+      <div class="timeline-body">
+        <div class="timeline-header">
+          <span class="timeline-agent" style="color:var(--${item.sev})">${item.agent}</span>
+          <span class="timeline-time">${formatTimeAgo(item.time)}</span>
+        </div>
+        <div class="timeline-desc">${item.desc}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+// ── Render: Actions ──
+function renderActions() {
+  const feed = document.getElementById('actions-feed');
+  const actions = [];
+
+  state.alerts.forEach(a => {
+    if (a.actions_taken) {
+      a.actions_taken.forEach(act => {
+        actions.push({ ...act, alertId: a.id, time: a.created_at });
+      });
+    }
+  });
+
+  document.getElementById('actions-count').textContent = actions.length;
+
+  const iconMap = {
+    block_ip: { icon: '⊘', cls: 'block' },
+    isolate_host: { icon: '⬡', cls: 'isolate' },
+    kill_process: { icon: '✕', cls: 'kill' },
+    escalate: { icon: '↑', cls: 'notify' },
+    notification: { icon: '◈', cls: 'notify' },
+    auto_close: { icon: '—', cls: 'close' },
+  };
+
+  feed.innerHTML = actions.slice(0, 20).map(a => {
+    const ic = iconMap[a.action] || iconMap.notification;
+    return `
+      <div class="action-item" onclick="openAlert('${a.alertId}')">
+        <div class="action-icon ${ic.cls}">${ic.icon}</div>
+        <div class="action-details">
+          <div class="action-name">${(a.action || '').replace(/_/g, ' ')}</div>
+          <div class="action-target">${a.target || a.alertId?.slice(0,8) || '—'}</div>
+        </div>
+        <span class="action-time">${formatTimeAgo(a.time)}</span>
+      </div>
+    `;
+  }).join('') || '<div class="empty-state"><p>No automated actions yet</p></div>';
+}
+
+// ── Render: Heatmap ──
+function renderHeatmap() {
+  renderSeverityDonut();
+  renderThreatRadar();
+  renderAttackTypeBars();
+}
+
+function renderSeverityDonut() {
+  const canvas = document.getElementById('severity-donut');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const cx = W/2, cy = H/2, R = Math.min(cx,cy) - 10, inner = R * 0.6;
+  ctx.clearRect(0, 0, W, H);
+
+  const counts = {critical:0, high:0, medium:0, low:0, info:0};
+  state.alerts.forEach(a => {
+    const s = a.is_false_positive ? 'info' : getSeverity(a.triage_score);
+    counts[s]++;
+  });
+  const total = Object.values(counts).reduce((a,b) => a+b, 0);
+  if (total === 0) {
+    ctx.fillStyle = 'rgba(255,255,255,0.15)';
+    ctx.font = '11px JetBrains Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('No alerts', cx, cy);
+    return;
+  }
+
+  const colors = {critical:'#ff3b5c', high:'#ff8b3e', medium:'#ffd43e', low:'#3edfcf', info:'#5b8def'};
+  let angle = -Math.PI / 2;
+  Object.entries(counts).forEach(([sev, count]) => {
+    if (count === 0) return;
+    const slice = (count / total) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.arc(cx, cy, R, angle, angle + slice);
+    ctx.arc(cx, cy, inner, angle + slice, angle, true);
+    ctx.closePath();
+    ctx.fillStyle = colors[sev];
+    ctx.globalAlpha = 0.85;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    // Label
+    const mid = angle + slice / 2;
+    const lx = cx + Math.cos(mid) * (R + inner) / 2;
+    const ly = cy + Math.sin(mid) * (R + inner) / 2;
+    if (slice > 0.3) {
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 10px JetBrains Mono, monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(count, lx, ly);
+    }
+    angle += slice;
+  });
+  // Center text
+  ctx.fillStyle = 'rgba(255,255,255,0.8)';
+  ctx.font = 'bold 22px JetBrains Mono, monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(total, cx, cy - 6);
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  ctx.font = '8px JetBrains Mono, monospace';
+  ctx.fillText('ALERTS', cx, cy + 10);
+}
+
+function renderThreatRadar() {
+  const canvas = document.getElementById('threat-radar-big');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const cx = W/2, cy = H/2;
+  const maxR = Math.min(cx,cy) - 30;
+  ctx.clearRect(0, 0, W, H);
+
+  // Collect by hour+severity
+  const hourData = Array.from({length:24}, () => ({critical:0,high:0,medium:0,low:0,info:0,total:0}));
+  let totalAlerts = 0;
+  state.alerts.forEach(a => {
+    if (a.created_at) {
+      var ts = String(a.created_at);
+      if (!ts.endsWith('Z') && !ts.includes('+')) ts += 'Z';
+      const h = new Date(ts).getHours();
+      const sev = a.is_false_positive ? 'info' : getSeverity(a.triage_score);
+      hourData[h][sev]++;
+      hourData[h].total++;
+      totalAlerts++;
+    }
+  });
+  if (document.getElementById('analytics-count'))
+    document.getElementById('analytics-count').textContent = totalAlerts;
+  const maxH = Math.max(...hourData.map(h => h.total), 1);
+
+  // Background glow
+  const bgGrd = ctx.createRadialGradient(cx, cy, 0, cx, cy, maxR);
+  bgGrd.addColorStop(0, 'rgba(91,141,239,0.03)');
+  bgGrd.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = bgGrd;
+  ctx.fillRect(0, 0, W, H);
+
+  // Concentric rings
+  for (let i = 1; i <= 5; i++) {
+    ctx.beginPath();
+    ctx.arc(cx, cy, (maxR/5)*i, 0, Math.PI*2);
+    ctx.strokeStyle = i === 5 ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.025)';
+    ctx.lineWidth = i === 5 ? 1.5 : 0.5;
+    ctx.stroke();
+  }
+
+  // Hour lines + labels
+  for (let h = 0; h < 24; h++) {
+    const a = (h/24)*Math.PI*2 - Math.PI/2;
+    const x2 = cx + Math.cos(a)*maxR;
+    const y2 = cy + Math.sin(a)*maxR;
+    ctx.beginPath();
+    ctx.moveTo(cx + Math.cos(a)*maxR*0.18, cy + Math.sin(a)*maxR*0.18);
+    ctx.lineTo(x2, y2);
+    ctx.strokeStyle = hourData[h].total > 0 ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.02)';
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+
+    // Labels every hour
+    const lx = cx + Math.cos(a)*(maxR + 18);
+    const ly = cy + Math.sin(a)*(maxR + 18);
+    ctx.fillStyle = hourData[h].total > 0 ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.15)';
+    ctx.font = (h%3===0 ? 'bold ' : '') + '10px JetBrains Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(String(h).padStart(2,'0'), lx, ly);
+  }
+
+  // Severity arcs
+  const sevC = {critical:{r:255,g:59,b:92},high:{r:255,g:139,b:62},medium:{r:255,g:212,b:62},low:{r:62,g:223,b:207},info:{r:91,g:141,b:239}};
+  for (let h = 0; h < 24; h++) {
+    const d = hourData[h];
+    if (d.total === 0) continue;
+    const sA = (h/24)*Math.PI*2 - Math.PI/2;
+    const eA = ((h+1)/24)*Math.PI*2 - Math.PI/2;
+    const intensity = d.total / maxH;
+    let curR = maxR * 0.2;
+    const availR = maxR * 0.78 * intensity;
+
+    ['info','low','medium','high','critical'].forEach(sev => {
+      if (d[sev] === 0) return;
+      const arcR = availR * (d[sev]/d.total);
+      const c = sevC[sev];
+
+      // Smooth arc with gradient
+      const grad = ctx.createLinearGradient(
+        cx + Math.cos(sA)*curR, cy + Math.sin(sA)*curR,
+        cx + Math.cos(eA)*(curR+arcR), cy + Math.sin(eA)*(curR+arcR)
+      );
+      grad.addColorStop(0, 'rgba('+c.r+','+c.g+','+c.b+','+(0.3+intensity*0.6)+')');
+      grad.addColorStop(1, 'rgba('+c.r+','+c.g+','+c.b+','+(0.5+intensity*0.4)+')');
+
+      ctx.beginPath();
+      ctx.arc(cx, cy, curR + arcR/2, sA + 0.015, eA - 0.015);
+      ctx.lineWidth = Math.max(arcR, 4);
+      ctx.strokeStyle = grad;
+      ctx.lineCap = 'round';
+      ctx.stroke();
+      curR += arcR;
+    });
+
+    // Outer glow for intense hours
+    if (intensity > 0.3) {
+      const ga = (sA+eA)/2;
+      const gx = cx + Math.cos(ga)*maxR*0.55;
+      const gy = cy + Math.sin(ga)*maxR*0.55;
+      const grd = ctx.createRadialGradient(gx, gy, 0, gx, gy, 30 * intensity);
+      const tc = d.critical>0 ? sevC.critical : d.high>0 ? sevC.high : sevC.medium;
+      grd.addColorStop(0, 'rgba('+tc.r+','+tc.g+','+tc.b+','+(0.12*intensity)+')');
+      grd.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = grd;
+      ctx.beginPath();
+      ctx.arc(gx, gy, 30*intensity, 0, Math.PI*2);
+      ctx.fill();
+    }
+
+    // Alert count on arc
+    if (d.total >= 2) {
+      const midA = (sA+eA)/2;
+      const tx = cx + Math.cos(midA)*(maxR*0.55);
+      const ty = cy + Math.sin(midA)*(maxR*0.55);
+      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      ctx.font = 'bold 11px JetBrains Mono, monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(d.total, tx, ty);
+    }
+  }
+
+  // Center circle
+  const cGrd = ctx.createRadialGradient(cx, cy, 0, cx, cy, maxR*0.18);
+  cGrd.addColorStop(0, 'rgba(13,13,20,1)');
+  cGrd.addColorStop(1, 'rgba(13,13,20,0.9)');
+  ctx.beginPath();
+  ctx.arc(cx, cy, maxR*0.18, 0, Math.PI*2);
+  ctx.fillStyle = cGrd;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  const avg = state.overview ? state.overview.avg_triage_score : null;
+  if (avg != null) {
+    ctx.fillStyle = avg >= 0.7 ? '#ff3b5c' : avg >= 0.4 ? '#ffd43e' : '#3edfcf';
+    ctx.font = 'bold 28px JetBrains Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(Math.round(avg*100)+'%', cx, cy - 8);
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.font = '9px JetBrains Mono, monospace';
+    ctx.fillText('AVG THREAT', cx, cy + 14);
+  } else {
+    ctx.fillStyle = 'rgba(255,255,255,0.2)';
+    ctx.font = '12px JetBrains Mono, monospace';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('NO DATA', cx, cy);
+  }
+
+  // Animated scan line
+  const now = new Date();
+  const scanA = (now.getHours()+now.getMinutes()/60)/24*Math.PI*2 - Math.PI/2;
+  const sx = cx + Math.cos(scanA)*maxR;
+  const sy = cy + Math.sin(scanA)*maxR;
+
+  // Sweep cone
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.arc(cx, cy, maxR, scanA - 0.08, scanA + 0.005);
+  ctx.closePath();
+  const sweepGrd = ctx.createRadialGradient(cx, cy, 0, cx, cy, maxR);
+  sweepGrd.addColorStop(0, 'rgba(91,141,239,0)');
+  sweepGrd.addColorStop(0.5, 'rgba(91,141,239,0.04)');
+  sweepGrd.addColorStop(1, 'rgba(91,141,239,0.12)');
+  ctx.fillStyle = sweepGrd;
+  ctx.fill();
+
+  // Scan line
+  const sGrd = ctx.createLinearGradient(cx, cy, sx, sy);
+  sGrd.addColorStop(0, 'rgba(91,141,239,0)');
+  sGrd.addColorStop(0.5, 'rgba(91,141,239,0.2)');
+  sGrd.addColorStop(1, 'rgba(91,141,239,0.7)');
+  ctx.beginPath();
+  ctx.moveTo(cx, cy);
+  ctx.lineTo(sx, sy);
+  ctx.strokeStyle = sGrd;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Scan dot with glow
+  ctx.beginPath();
+  ctx.arc(sx, sy, 5, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(91,141,239,0.9)';
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(sx, sy, 10, 0, Math.PI*2);
+  ctx.fillStyle = 'rgba(91,141,239,0.15)';
+  ctx.fill();
+}
+
+// Also render the analytics donut (bigger version)
+function renderAnalyticsDonut() {
+  const canvas = document.getElementById('analytics-donut');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const cx = W/2, cy = H/2, R = Math.min(cx,cy)-10, inner = R*0.55;
+  ctx.clearRect(0,0,W,H);
+
+  const counts = {critical:0,high:0,medium:0,low:0,info:0};
+  state.alerts.forEach(a => {
+    counts[a.is_false_positive ? 'info' : getSeverity(a.triage_score)]++;
+  });
+  const total = Object.values(counts).reduce((a,b)=>a+b,0);
+  if (total === 0) { ctx.fillStyle='rgba(255,255,255,0.15)'; ctx.font='12px JetBrains Mono'; ctx.textAlign='center'; ctx.fillText('No data',cx,cy); return; }
+
+  const colors = {critical:'#ff3b5c',high:'#ff8b3e',medium:'#ffd43e',low:'#3edfcf',info:'#5b8def'};
+  let angle = -Math.PI/2;
+  Object.entries(counts).forEach(([sev,count]) => {
+    if (!count) return;
+    const slice = (count/total)*Math.PI*2;
+    // Shadow
+    ctx.save();
+    ctx.shadowColor = colors[sev];
+    ctx.shadowBlur = 15;
+    ctx.beginPath();
+    ctx.arc(cx,cy,R,angle,angle+slice);
+    ctx.arc(cx,cy,inner,angle+slice,angle,true);
+    ctx.closePath();
+    ctx.fillStyle = colors[sev];
+    ctx.globalAlpha = 0.8;
+    ctx.fill();
+    ctx.restore();
+    ctx.globalAlpha = 1;
+    // Label
+    const mid = angle + slice/2;
+    const lr = (R+inner)/2;
+    if (slice > 0.25) {
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 13px JetBrains Mono, monospace';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(sev.toUpperCase(), cx+Math.cos(mid)*lr, cy+Math.sin(mid)*lr - 6);
+      ctx.font = '11px JetBrains Mono, monospace';
+      ctx.fillText(count + ' (' + Math.round(count/total*100) + '%)', cx+Math.cos(mid)*lr, cy+Math.sin(mid)*lr + 8);
+    }
+    angle += slice;
+  });
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 30px JetBrains Mono, monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(total, cx, cy-8);
+  ctx.fillStyle = 'rgba(255,255,255,0.3)';
+  ctx.font = '10px JetBrains Mono, monospace';
+  ctx.fillText('TOTAL ALERTS', cx, cy+14);
+}
+
+function renderAttackTypeBars() {
+  const container = document.getElementById('attack-type-bars');
+  if (!container) return;
+  const typeCounts = {};
+  state.alerts.forEach(a => {
+    const raw = a.raw_data || {};
+    const norm = a.normalized || {};
+    const type = raw.event_type || norm.event_type || a.source || 'unknown';
+    typeCounts[type] = (typeCounts[type]||0) + 1;
+  });
+  const sorted = Object.entries(typeCounts).sort((a,b) => b[1]-a[1]);
+  const max = sorted.length > 0 ? sorted[0][1] : 1;
+
+  if (sorted.length === 0) {
+    container.innerHTML = '<div class="empty-state"><p>No attack data yet</p></div>';
+    return;
+  }
+
+  container.innerHTML = sorted.slice(0,12).map(([type, count]) => {
+    const pct = (count/max*100).toFixed(0);
+    const color = type.includes('injection') || type.includes('command') ? 'var(--critical)' :
+                  type.includes('xss') || type.includes('traversal') || type.includes('sensitive') || type.includes('brute') ? 'var(--high)' :
+                  type.includes('scanner') ? 'var(--medium)' : 'var(--info)';
+    return '<div style="margin-bottom:10px;">' +
+      '<div style="display:flex;justify-content:space-between;margin-bottom:3px;">' +
+        '<span style="font-family:var(--font-mono);font-size:11px;color:var(--text-secondary)">' + type.replace(/_/g,' ') + '</span>' +
+        '<span style="font-family:var(--font-mono);font-size:11px;font-weight:600;color:' + color + '">' + count + '</span>' +
+      '</div>' +
+      '<div style="height:6px;background:var(--bg-void);border-radius:3px;overflow:hidden;">' +
+        '<div style="height:100%;width:' + pct + '%;background:' + color + ';border-radius:3px;transition:width 0.6s ease;"></div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+// ── Open Alert Detail ──
+async function openAlert(alertId) {
+  navigateTo('detail');
+  const detailMain = document.getElementById('detail-main-content');
+  const detailSidebar = document.getElementById('detail-sidebar');
+  detailMain.innerHTML = '<div class="empty-state"><div class="loading-spinner"></div><p style="margin-top:12px">Loading investigation data...</p></div>';
+  detailSidebar.innerHTML = '';
+
+  document.getElementById('detail-id').textContent = alertId.slice(0, 12) + '…';
+
+  const data = await fetchJSON(`${API}/alerts/${alertId}`);
+  if (!data) {
+    detailMain.innerHTML = '<div class="empty-state"><p>Failed to load alert</p></div>';
+    return;
+  }
+
+  const a = data.alert;
+  const sev = a.is_false_positive ? 'closed' : getSeverity(a.triage_score);
+
+  document.getElementById('detail-severity-chip').innerHTML = `<span class="severity-chip ${sev}">${sev}</span>`;
+  document.getElementById('detail-status-chip').innerHTML = `<span class="status-chip ${a.status}"><span class="status-dot"></span>${a.status}</span>`;
+
+  // Main content
+  detailMain.innerHTML = `
+    <div class="detail-section">
+      <div class="detail-section-title">Triage Assessment</div>
+      <div class="detail-meta-grid">
+        <div class="detail-meta-item">
+          <div class="detail-meta-label">Threat Score</div>
+          <div class="detail-meta-value" style="color:var(--${sev})">${scorePercent(a.triage_score)}</div>
+        </div>
+        <div class="detail-meta-item">
+          <div class="detail-meta-label">Confidence</div>
+          <div class="detail-meta-value">${((a.confidence || 0) * 100).toFixed(0)}%</div>
+        </div>
+        <div class="detail-meta-item">
+          <div class="detail-meta-label">Classification</div>
+          <div class="detail-meta-value" style="font-size:14px;text-transform:uppercase">${sev}</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">AI Reasoning</div>
+      <div class="detail-reasoning">${a.triage_reasoning || 'No reasoning available'}</div>
+    </div>
+
+    ${a.enrichment_results ? `
+    <div class="detail-section">
+      <div class="detail-section-title">Enrichment Results</div>
+      <div class="detail-raw-data">${JSON.stringify(a.enrichment_results, null, 2)}</div>
+    </div>` : ''}
+
+    ${a.actions_taken && a.actions_taken.length > 0 ? `
+    <div class="detail-section">
+      <div class="detail-section-title">Automated Actions (${a.actions_taken.length})</div>
+      ${a.actions_taken.map(act => `
+        <div class="action-item" style="border:1px solid var(--border-subtle);border-radius:var(--radius-sm);margin-bottom:6px;">
+          <div class="action-icon ${act.action === 'block_ip' ? 'block' : act.action === 'isolate_host' ? 'isolate' : act.action === 'kill_process' ? 'kill' : 'notify'}">
+            ${act.action === 'block_ip' ? '⊘' : act.action === 'isolate_host' ? '⬡' : act.action === 'kill_process' ? '✕' : '◈'}
+          </div>
+          <div class="action-details">
+            <div class="action-name">${(act.action||'').replace(/_/g,' ')}</div>
+            <div class="action-target">${act.target || '—'} — ${act.status || 'executed'}</div>
+          </div>
+        </div>
+      `).join('')}
+    </div>` : ''}
+
+    <div class="detail-section">
+      <div class="detail-section-title">Raw Alert Data</div>
+      <div class="detail-raw-data">${JSON.stringify(data.raw_data || data.normalized || {}, null, 2)}</div>
+    </div>
+
+    <div class="detail-section" id="remediation-section">
+      <div class="detail-section-title">⏳ Loading Remediation...</div>
+    </div>
+
+    <div class="detail-section" id="playback-section">
+      <div class="detail-section-title">⏳ Loading Attack Playback...</div>
+    </div>
+  `;
+
+  // Load remediation
+  loadRemediation(alertId);
+  loadPlayback(alertId);
+
+  // Sidebar: Audit Trail
+  detailSidebar.innerHTML = `
+    <div class="panel-header">
+      <span class="panel-title">Audit Trail</span>
+      <span class="panel-badge">${(data.audit_trail || []).length}</span>
+    </div>
+    <div class="timeline-feed">
+      ${(data.audit_trail || []).map(log => {
+        const agentColor = {
+          ingestion: 'var(--info)',
+          orchestrator: 'var(--accent-bright)',
+          triage: 'var(--high)',
+          enrichment: 'var(--medium)',
+          hunting: 'var(--low)',
+          response: 'var(--critical)',
+          learning: 'var(--success)',
+        }[log.agent] || 'var(--text-tertiary)';
+        return `
+          <div class="timeline-item" style="cursor:default">
+            <div class="timeline-dot-col">
+              <div class="timeline-dot" style="background:${agentColor}"></div>
+              <div class="timeline-line"></div>
+            </div>
+            <div class="timeline-body">
+              <div class="timeline-header">
+                <span class="timeline-agent" style="color:${agentColor}">${log.agent}</span>
+                <span class="timeline-time">${formatTime(log.timestamp)}</span>
+              </div>
+              <div class="timeline-desc">${(log.action || '').replace(/_/g, ' ')}</div>
+            </div>
+          </div>
+        `;
+      }).join('')}
+    </div>
+  `;
+}
+
+// ── Remediation & Playback ──
+async function loadRemediation(alertId) {
+  const section = document.getElementById('remediation-section');
+  if (!section) return;
+  const data = await fetchJSON(`${API}/alerts/${alertId}/remediation`);
+  if (!data || !data.title) {
+    section.innerHTML = '';
+    return;
+  }
+
+  let html = `<div class="detail-section-title">🛡️ Remediation: ${data.title}</div>`;
+  html += `<div style="background:var(--bg-secondary);border:1px solid var(--border-subtle);border-radius:6px;padding:14px;margin-bottom:12px;">`;
+  html += `<div style="font-size:12px;color:var(--text-secondary);margin-bottom:8px">${data.description}</div>`;
+  html += `<span class="severity-chip ${data.severity}" style="margin-right:8px">${data.severity}</span>`;
+  html += `<span style="font-family:var(--font-mono);font-size:10px;color:var(--text-tertiary)">${data.owasp}</span>`;
+  html += `</div>`;
+
+  // Immediate actions
+  if (data.immediate_actions && data.immediate_actions.length > 0) {
+    html += `<div style="font-family:var(--font-mono);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--critical);margin-bottom:6px">⚠ Immediate Actions</div>`;
+    data.immediate_actions.forEach(function(action) {
+      html += `<div style="display:flex;gap:8px;padding:4px 0;font-size:12px;color:var(--text-secondary)"><span style="color:var(--critical)">→</span>${action}</div>`;
+    });
+  }
+
+  // Fix steps with code examples
+  if (data.fix_steps && data.fix_steps.length > 0) {
+    html += `<div style="font-family:var(--font-mono);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--success);margin:16px 0 8px">🔧 How to Fix</div>`;
+    data.fix_steps.forEach(function(fix) {
+      var priorityColor = fix.priority === 'immediate' ? 'var(--critical)' : fix.priority === 'short-term' ? 'var(--high)' : 'var(--info)';
+      html += `<div style="background:var(--bg-void);border:1px solid var(--border-subtle);border-radius:6px;padding:12px;margin-bottom:8px;">`;
+      html += `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">`;
+      html += `<span style="font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--text-primary)">${fix.title}</span>`;
+      html += `<span style="font-family:var(--font-mono);font-size:9px;padding:2px 6px;border-radius:2px;background:${priorityColor}20;color:${priorityColor}">${fix.priority}</span>`;
+      html += `</div>`;
+      html += `<div style="font-size:11px;color:var(--text-tertiary);margin-bottom:8px">${fix.description}</div>`;
+      if (fix.vulnerable_code) {
+        html += `<div style="font-family:var(--font-mono);font-size:9px;color:var(--critical);margin-bottom:2px">✕ VULNERABLE</div>`;
+        html += `<pre style="background:rgba(255,59,92,0.08);border:1px solid rgba(255,59,92,0.15);border-radius:4px;padding:8px;font-family:var(--font-mono);font-size:10px;color:var(--text-secondary);overflow-x:auto;margin-bottom:6px">${fix.vulnerable_code}</pre>`;
+      }
+      if (fix.fixed_code) {
+        html += `<div style="font-family:var(--font-mono);font-size:9px;color:var(--success);margin-bottom:2px">✓ FIXED</div>`;
+        html += `<pre style="background:rgba(62,223,207,0.08);border:1px solid rgba(62,223,207,0.15);border-radius:4px;padding:8px;font-family:var(--font-mono);font-size:10px;color:var(--text-secondary);overflow-x:auto">${fix.fixed_code}</pre>`;
+      }
+      html += `</div>`;
+    });
+  }
+
+  // References
+  if (data.references && data.references.length > 0) {
+    html += `<div style="margin-top:12px">`;
+    data.references.forEach(function(ref) {
+      html += `<a href="${ref}" target="_blank" style="display:block;font-family:var(--font-mono);font-size:10px;color:var(--accent-bright);margin-bottom:4px;text-decoration:none">${ref}</a>`;
+    });
+    html += `</div>`;
+  }
+
+  section.innerHTML = html;
+}
+
+async function loadPlayback(alertId) {
+  const section = document.getElementById('playback-section');
+  if (!section) return;
+  const data = await fetchJSON(`${API}/alerts/${alertId}/playback`);
+  if (!data || !data.steps) {
+    section.innerHTML = '';
+    return;
+  }
+
+  let html = `<div class="detail-section-title">🎬 Attack Playback (${data.total_steps} steps)</div>`;
+  html += `<div style="position:relative;padding-left:24px;">`;
+
+  data.steps.forEach(function(step, i) {
+    var isLast = i === data.steps.length - 1;
+    html += `<div style="position:relative;padding-bottom:${isLast ? '0' : '16px'};">`;
+    // Dot and line
+    html += `<div style="position:absolute;left:-24px;top:2px;">`;
+    html += `<div style="width:14px;height:14px;border-radius:50%;background:${step.color};display:flex;align-items:center;justify-content:center;font-size:8px">${step.step}</div>`;
+    if (!isLast) html += `<div style="width:1px;height:calc(100% - 2px);background:var(--border-subtle);margin:4px auto 0"></div>`;
+    html += `</div>`;
+    // Content
+    html += `<div style="background:var(--bg-secondary);border:1px solid var(--border-subtle);border-radius:6px;padding:10px;border-left:3px solid ${step.color}">`;
+    html += `<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">`;
+    html += `<span style="font-size:14px">${step.icon}</span>`;
+    html += `<span style="font-family:var(--font-mono);font-size:9px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px;color:${step.color}">${step.phase}</span>`;
+    html += `</div>`;
+    html += `<div style="font-size:12px;font-weight:500;color:var(--text-primary);margin-bottom:2px">${step.title}</div>`;
+    html += `<div style="font-size:11px;color:var(--text-tertiary);line-height:1.4">${step.description.slice(0, 150)}</div>`;
+    // Show action details for response step
+    if (step.details && step.details.actions && step.details.actions.length > 0) {
+      step.details.actions.forEach(function(a) {
+        html += `<div style="display:flex;align-items:center;gap:6px;margin-top:4px;font-family:var(--font-mono);font-size:10px">`;
+        html += `<span style="color:${a.status==='executed'?'var(--success)':'var(--fp)'}">●</span>`;
+        html += `<span style="color:var(--text-secondary)">${(a.action||'').replace(/_/g,' ')}</span>`;
+        html += `<span style="color:var(--text-tertiary)">→ ${a.target||''}</span>`;
+        html += `</div>`;
+      });
+    }
+    html += `</div></div>`;
+  });
+
+  html += `</div>`;
+  section.innerHTML = html;
+}
+
+// ── Render: Feedback Queue ──
+function renderFeedbackQueue() {
+  const list = document.getElementById('feedback-list');
+  const respondedAlerts = state.alerts.filter(a => a.status === 'responded' || a.status === 'closed');
+  document.getElementById('fb-queue-count').textContent = respondedAlerts.length;
+
+  list.innerHTML = respondedAlerts.slice(0, 15).map(a => {
+    const sev = a.is_false_positive ? 'closed' : getSeverity(a.triage_score);
+    return `
+      <div class="feedback-card" id="fb-${a.id}">
+        <div class="feedback-card-header">
+          <span class="severity-chip ${sev}">${sev}</span>
+          <span class="score-display" style="color:var(--${sev})">${scorePercent(a.triage_score)}</span>
+          <span style="color:var(--text-tertiary);font-size:11px;font-family:var(--font-mono)">${(a.id||'').slice(0,8)}…</span>
+          <span style="margin-left:auto;color:var(--text-tertiary);font-size:11px">${formatTimeAgo(a.created_at)}</span>
+        </div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-bottom:12px;">${truncate(getDescription(a), 120)}</div>
+        <div class="feedback-options">
+          <button class="fb-option" onclick="selectFB(this)">✓ Agree</button>
+          <button class="fb-option" onclick="selectFB(this)">✕ Disagree</button>
+          <button class="fb-option" onclick="selectFB(this)">False Positive</button>
+          <button class="fb-option" onclick="selectFB(this)">True Positive</button>
+          <button class="fb-option" onclick="selectFB(this)">Needs Review</button>
+        </div>
+        <textarea class="fb-textarea" placeholder="Optional analyst notes..."></textarea>
+        <button class="fb-submit" onclick="submitFeedback('${a.id}', this)">Submit Feedback</button>
+      </div>
+    `;
+  }).join('') || '<div class="empty-state"><p>No alerts in feedback queue</p></div>';
+}
+
+function selectFB(el) {
+  el.parentElement.querySelectorAll('.fb-option').forEach(b => b.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+async function submitFeedback(alertId, btn) {
+  const card = document.getElementById('fb-' + alertId);
+  const selected = card.querySelector('.fb-option.selected');
+  const notes = card.querySelector('.fb-textarea').value;
+  if (!selected) return;
+
+  btn.textContent = 'Submitting...';
+  btn.disabled = true;
+
+  try {
+    await fetch(`${API}/feedback`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        alert_id: alertId,
+        label: selected.textContent.replace(/[✓✕]/g, '').trim().toLowerCase().replace(/\s+/g, '_'),
+        notes: notes,
+      }),
+    });
+    card.style.opacity = '0.4';
+    btn.textContent = '✓ Submitted';
+  } catch (e) {
+    btn.textContent = 'Error — Retry';
+    btn.disabled = false;
+  }
+}
+
+// ── Filter Handlers ──
+document.querySelectorAll('.sev-filter').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.sev-filter').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.currentFilter = btn.dataset.sev;
+    renderAlerts();
+  });
+});
+
+document.querySelectorAll('.filter-chip').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderFullAlerts();
+  });
+});
+
+document.getElementById('alert-search').addEventListener('input', (e) => {
+  state.searchQuery = e.target.value;
+  renderFullAlerts();
+});
+
+// ── Clear All Alerts ──
+async function clearAllAlerts() {
+  if (!confirm('Delete ALL alerts? This cannot be undone.')) return;
+  try {
+    await fetch(`${API}/alerts/clear`, {method: 'DELETE'});
+    state.alerts = [];
+    renderAlerts();
+    renderFullAlerts();
+    renderTimeline();
+    renderActions();
+    renderFeedbackQueue();
+    updateTopbarStats();
+    await loadOverview();
+    renderSeverityBars();
+    renderHeatmap();
+    console.log('[SOC] All alerts cleared');
+  } catch(e) { console.error('Clear failed:', e); }
+}
+
+// ── Bootstrap ──
+async function init() {
+  try {
+    await Promise.all([loadAlerts(), loadOverview(), loadPipeline()]);
+    renderHeatmap();
+    connectWS();
+  } catch(e) { console.error('Init error:', e); }
+
+  // Non-blocking loads
+  loadMLStats().catch(e => console.warn('ML stats unavailable:', e));
+  loadTargets().catch(e => console.warn('Targets unavailable:', e));
+
+  // Auto-refresh every 3s
+  setInterval(async () => {
+    try {
+      await loadAlerts();
+      await loadOverview();
+      renderHeatmap();
+      renderAnalyticsDonut();
+    } catch(e) {}
+  }, 3000);
+}
+
+// ── Targets Page ──
+let selectedTarget = null;
+
+async function addTarget() {
+  const input = document.getElementById('target-url-input');
+  const url = input.value.trim();
+  if (!url) return;
+  try {
+    const resp = await fetch(`${API}/targets`, {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({url, name: ''}),
+    });
+    if (resp.ok) { input.value = ''; await loadTargets(); }
+  } catch(e) { console.error('Add target failed:', e); }
+}
+
+async function loadTargets() {
+  const data = await fetchJSON(`${API}/targets`);
+  if (!data || !data.targets) return;
+  const list = document.getElementById('targets-list');
+  if (!list) return;
+  document.getElementById('targets-count').textContent = data.targets.length;
+
+  list.innerHTML = data.targets.map(t => `
+    <div class="timeline-item" style="cursor:pointer;${selectedTarget === t.hostname ? 'background:var(--bg-hover);border-left:2px solid var(--accent);' : ''}"
+         onclick="selectTarget('${t.hostname}')">
+      <div class="timeline-dot-col"><div class="timeline-dot" style="background:${t.is_active ? 'var(--success)' : 'var(--fp)'}"></div></div>
+      <div class="timeline-body">
+        <div class="timeline-header">
+          <span class="timeline-agent" style="color:var(--accent-bright)">${t.name || t.hostname}</span>
+          <button class="panel-btn" style="margin-left:auto;font-size:9px;padding:2px 6px;color:var(--critical)" onclick="event.stopPropagation();deleteTarget('${t.hostname}')">✕</button>
+        </div>
+        <div class="timeline-desc">${t.url}</div>
+        <div style="display:flex;gap:12px;margin-top:4px;">
+          <span style="font-family:var(--font-mono);font-size:10px;color:var(--text-tertiary)">${t.total_requests} reqs</span>
+          <span style="font-family:var(--font-mono);font-size:10px;color:var(--critical)">${t.total_alerts} attacks</span>
+        </div>
+      </div>
+    </div>
+  `).join('') || '<div class="empty-state"><p>No targets added yet</p></div>';
+}
+
+async function deleteTarget(hostname) {
+  if (!confirm('Remove target: ' + hostname + '?')) return;
+  try {
+    await fetch(`${API}/targets/${hostname}`, {method: 'DELETE'});
+    if (selectedTarget === hostname) selectedTarget = null;
+    await loadTargets();
+    document.getElementById('target-detail-body').innerHTML = '<div class="empty-state"><p>Target removed</p></div>';
+    document.getElementById('target-detail-title').textContent = 'Select a target';
+  } catch(e) { console.error('Delete failed:', e); }
+}
+
+async function selectTarget(hostname) {
+  selectedTarget = hostname;
+  loadTargets();
+  const data = await fetchJSON(`${API}/targets/${hostname}`);
+  if (!data) return;
+  document.getElementById('target-detail-title').textContent = data.name || hostname;
+  const body = document.getElementById('target-detail-body');
+
+  let html = `
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;">
+      <div style="background:var(--bg-secondary);padding:10px;border-radius:4px;border:1px solid var(--border-subtle);">
+        <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-tertiary);text-transform:uppercase">Total Requests</div>
+        <div style="font-family:var(--font-mono);font-size:22px;font-weight:700">${data.total_requests}</div>
+      </div>
+      <div style="background:var(--bg-secondary);padding:10px;border-radius:4px;border:1px solid var(--border-subtle);">
+        <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-tertiary);text-transform:uppercase">Attacks</div>
+        <div style="font-family:var(--font-mono);font-size:22px;font-weight:700;color:var(--critical)">${data.total_alerts}</div>
+      </div>
+      <div style="background:var(--bg-secondary);padding:10px;border-radius:4px;border:1px solid var(--border-subtle);">
+        <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-tertiary);text-transform:uppercase">Status</div>
+        <div style="font-family:var(--font-mono);font-size:14px;font-weight:600;color:${data.is_active ? 'var(--success)' : 'var(--fp)'};margin-top:4px">${data.is_active ? '● ACTIVE' : '○ OFF'}</div>
+      </div>
+      <div style="background:var(--bg-secondary);padding:10px;border-radius:4px;border:1px solid var(--border-subtle);">
+        <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-tertiary);text-transform:uppercase">Last Scan</div>
+        <div style="font-family:var(--font-mono);font-size:12px;color:var(--text-secondary);margin-top:4px">${data.last_scan ? formatTimeAgo(data.last_scan) : 'Never'}</div>
+      </div>
+    </div>`;
+
+  const attacks = data.recent_attacks || [];
+  if (attacks.length > 0) {
+    html += '<div style="font-family:var(--font-mono);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-tertiary);margin-bottom:8px">Recent Attacks</div>';
+    html += '<div style="max-height:220px;overflow-y:auto;border:1px solid var(--border-subtle);border-radius:4px">';
+    attacks.slice(-15).reverse().forEach(a => {
+      const d = a.data || a;
+      const sev = d.severity || 'info';
+      html += `<div class="action-item"><div class="action-icon ${sev==='critical'?'block':sev==='high'?'isolate':'notify'}">${sev==='critical'?'⊘':sev==='high'?'⚠':'ℹ'}</div><div class="action-details"><div class="action-name">${d.event_type||'unknown'}</div><div class="action-target">${(d.message||'').slice(0,80)}</div></div><span class="severity-chip ${sev}">${sev}</span></div>`;
+    });
+    html += '</div>';
+  }
+
+  const alerts = data.alerts || [];
+  if (alerts.length > 0) {
+    html += '<div style="font-family:var(--font-mono);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;color:var(--text-tertiary);margin:16px 0 8px">AI-Processed Alerts</div>';
+    html += '<table class="alert-table" style="border:1px solid var(--border-subtle);border-radius:4px"><thead><tr><th>Sev</th><th>Score</th><th>Type</th><th>Status</th><th>Time</th></tr></thead><tbody>';
+    alerts.forEach(a => {
+      const sev = a.triage_score ? (a.triage_score>=0.9?'critical':a.triage_score>=0.7?'high':a.triage_score>=0.4?'medium':'low') : 'info';
+      html += `<tr class="severity-${sev}" onclick="openAlert('${a.id}')"><td><span class="severity-chip ${sev}">${sev}</span></td><td style="font-family:var(--font-mono);color:var(--${sev})">${a.triage_score?scorePercent(a.triage_score):'—'}</td><td>${a.event_type||'—'}</td><td><span class="status-chip ${a.status||'new'}">${a.status||'new'}</span></td><td class="td-time">${a.created_at?formatTimeAgo(a.created_at):'—'}</td></tr>`;
+    });
+    html += '</tbody></table>';
+  }
+  body.innerHTML = html;
+
+  // Add browser hook tip
+  const hookTip = document.createElement('div');
+  hookTip.style.cssText = 'margin-top:16px;background:var(--bg-secondary);padding:12px;border-radius:6px;border:1px solid var(--border-subtle);';
+  hookTip.innerHTML = `
+    <div style="font-family:var(--font-mono);font-size:10px;font-weight:600;text-transform:uppercase;color:var(--text-tertiary);margin-bottom:6px">Live Browser Monitoring</div>
+    <p style="font-size:11px;color:var(--text-secondary);margin-bottom:4px">Open <a href="${data.url}" target="_blank" style="color:var(--accent-bright)">${data.url}</a> → F12 Console → paste:</p>
+    <code style="display:block;background:var(--bg-void);padding:8px;border-radius:4px;font-family:var(--font-mono);font-size:10px;color:var(--accent-bright);cursor:pointer;word-break:break-all" onclick="navigator.clipboard.writeText(this.textContent);this.style.color='var(--success)';setTimeout(()=>this.style.color='var(--accent-bright)',1000)">fetch("http://localhost:8000/inject.js").then(r=>r.text()).then(eval)</code>
+    <p style="font-size:10px;color:var(--text-disabled);margin-top:4px">Click to copy • Every click, form, and URL change will be analyzed</p>
+  `;
+  body.appendChild(hookTip);
+}
+
+async function scanSelectedTarget() {
+  if (!selectedTarget) return;
+  await fetch(`${API}/targets/${selectedTarget}/scan`, {method:'POST'});
+  setTimeout(() => selectTarget(selectedTarget), 3000);
+}
+
+async function simulateAttackOnTarget() {
+  if (!selectedTarget) return;
+  const t = selectedTarget;
+  const attacks = [
+    {target:t, method:'GET', path:"/artists.php", query_string:"artist=1' OR '1'='1", source_ip:"192.168.1.100", user_agent:"sqlmap/1.6"},
+    {target:t, method:'GET', path:"/search.php", query_string:'q=<scr'+'ipt>alert("XSS")<\/scr'+'ipt>', source_ip:"192.168.1.100"},
+    {target:t, method:'GET', path:"/../../etc/passwd", source_ip:"192.168.1.100"},
+    {target:t, method:'GET', path:"/.env", source_ip:"192.168.1.100"},
+    {target:t, method:'GET', path:"/.git/config", source_ip:"192.168.1.100"},
+    {target:t, method:'POST', path:"/admin/login", body:"username=admin&password=test", source_ip:"192.168.1.100"},
+    {target:t, method:'GET', path:"/product.php", query_string:"id=1 UNION SELECT 1,2,3--", source_ip:"10.0.0.50", user_agent:"nikto"},
+  ];
+  for (const atk of attacks) {
+    try { await fetch(`${API}/targets/analyze`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(atk)}); } catch(e) {}
+    await new Promise(r => setTimeout(r, 800));
+  }
+  setTimeout(() => { selectTarget(t); loadTargets(); loadAlerts(); }, 2000);
+}
+
+setInterval(loadTargets, 10000);
+
+// ── ML Integration ──
+async function loadMLStats() {
+  const mlStats = await fetchJSON(`${API}/ml/stats`);
+  if (mlStats && mlStats.trained) {
+    // Update ML badge in KPI
+    const actionsKpi = document.getElementById('kpi-actions');
+    if (actionsKpi) {
+      const sub = actionsKpi.parentElement.querySelector('.kpi-sub');
+      if (sub) sub.innerHTML = `ML model active <span style="color:var(--success)">●</span>`;
+    }
+  }
+
+  // Load ML comparison data
+  const compare = await fetchJSON(`${API}/ml/compare`);
+  if (compare && compare.comparisons && compare.comparisons.length > 0) {
+    renderMLComparison(compare);
+  }
+}
+
+function renderMLComparison(data) {
+  const panel = document.getElementById('ml-comparison-panel');
+  if (!panel) return;
+  panel.style.display = 'block';
+
+  const agree = data.comparisons.filter(c => c.agreement).length;
+  const disagree = data.comparisons.length - agree;
+
+  let html = `<div style="font-family:var(--font-mono);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:0.6px;color:var(--text-tertiary);margin-bottom:8px">ML vs Claude <span style="color:${data.agreement_rate >= 70 ? 'var(--success)' : 'var(--high)'}">${data.agreement_rate}%</span></div>`;
+
+  // Mini dots
+  html += '<div style="display:flex;flex-wrap:wrap;gap:2px;margin-bottom:8px;">';
+  data.comparisons.forEach(c => {
+    const color = c.agreement ? 'var(--success)' : 'var(--critical)';
+    html += `<div style="width:8px;height:8px;border-radius:2px;background:${color};opacity:${c.agreement?'0.5':'1'}" title="${c.alert_id.slice(0,8)}: Claude=${c.claude_score.toFixed(2)} ML=${c.ml_score.toFixed(2)}"></div>`;
+  });
+  html += '</div>';
+
+  html += `<div style="display:flex;gap:8px;"><div style="font-family:var(--font-mono);font-size:11px"><span style="color:var(--success)">●</span> ${agree} agree</div><div style="font-family:var(--font-mono);font-size:11px"><span style="color:var(--critical)">●</span> ${disagree} disagree</div></div>`;
+
+  panel.innerHTML = html;
+}
+
+init();
+</script>
+</body>
+</html>
