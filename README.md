@@ -202,7 +202,3 @@ pytest tests/
 | Phase 5 | 🔄 In Progress | Wazuh integration, Kubernetes, load testing |
 
 ---
-
-## License
-
-MIT License — feel free to use, modify, and distribute.
